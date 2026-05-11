@@ -12,5 +12,9 @@ export const ADMIN_ROUTES: Routes = [
   {
     path: 'orders',
     loadComponent: () => import('./orders/admin-orders.component').then(m => m.AdminOrdersComponent)
+  },
+  {
+    path: 'promotions',
+    loadComponent: () => import('./promotions/admin-promotions.component').then(m => m.AdminPromotionsComponent)
   }
 ];

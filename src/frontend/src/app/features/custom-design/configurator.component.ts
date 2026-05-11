@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { environment } from '../../../environments/environment';
+import { CustomDesignService } from '../../core/services/custom-design.service';
+import { CartService } from '../../core/services/cart.service';
 
 @Component({
   selector: 'app-configurator',
@@ -51,6 +52,18 @@ import { environment } from '../../../environments/environment';
           </select>
         </div>
 
+        <!-- Purity -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Purity</label>
+          <select [(ngModel)]="config.purity" class="w-full p-3 border rounded-lg">
+            <option value="22K">22K</option>
+            <option value="18K">18K</option>
+            <option value="14K">14K</option>
+            <option value="925">925 Sterling</option>
+            <option value="950">950 Platinum</option>
+          </select>
+        </div>
+
         <!-- Stone Type -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Stone</label>
@@ -60,6 +73,7 @@ import { environment } from '../../../environments/environment';
             <option value="Ruby">Ruby</option>
             <option value="Emerald">Emerald</option>
             <option value="Sapphire">Sapphire</option>
+            <option value="Pearl">Pearl</option>
           </select>
         </div>
 
@@ -113,18 +127,22 @@ import { environment } from '../../../environments/environment';
         <!-- Estimated Price -->
         <div class="bg-amber-50 p-4 rounded-xl">
           <p class="text-sm text-gray-600">Estimated Price</p>
-          <p class="text-2xl font-bold text-amber-600">₹{{ estimatedPrice() | number }}</p>
+          <p class="text-2xl font-bold text-amber-600">₹{{ estimatedPrice() | number:'1.0-0' }}</p>
         </div>
 
         <!-- Actions -->
         <div class="space-y-3">
-          <button (click)="saveDesign()" [disabled]="saving()"
+          <button (click)="saveAndAddToCart()" [disabled]="saving()"
             class="w-full py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition disabled:opacity-50">
             {{ saving() ? 'Saving...' : 'Save & Add to Cart' }}
           </button>
+          <button (click)="saveDesign()" [disabled]="saving()"
+            class="w-full py-3 border border-amber-600 text-amber-600 rounded-lg font-semibold hover:bg-amber-50 transition">
+            Save Draft
+          </button>
           <button (click)="capturePreview()"
             class="w-full py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
-            Capture Preview
+            Download Preview
           </button>
         </div>
       </aside>
@@ -147,6 +165,7 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
   config = {
     baseType: 'Ring',
     metal: 'Gold',
+    purity: '22K',
     stoneType: 'Diamond',
     stoneShape: 'Round',
     carat: 1.0,
@@ -158,10 +177,16 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
     { value: 'Ring', label: 'Ring', icon: '💍' },
     { value: 'Earring', label: 'Earring', icon: '✨' },
     { value: 'Necklace', label: 'Necklace', icon: '📿' },
-    { value: 'Bracelet', label: 'Bracelet', icon: '⌚' }
+    { value: 'Bracelet', label: 'Bracelet', icon: '⌚' },
+    { value: 'Pendant', label: 'Pendant', icon: '💎' },
+    { value: 'Bangle', label: 'Bangle', icon: '⭕' }
   ];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private designService: CustomDesignService,
+    private cartService: CartService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.initScene();
@@ -194,7 +219,6 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
     this.controls.dampingFactor = 0.05;
     this.controls.maxPolarAngle = Math.PI * 0.8;
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     this.scene.add(ambientLight);
 
@@ -214,13 +238,11 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
   }
 
   private createJewellery() {
-    // Placeholder ring geometry (will be replaced with glTF models)
     const ringGeometry = new THREE.TorusGeometry(1, 0.15, 32, 100);
     const material = this.getMetalMaterial();
     this.metalMesh = new THREE.Mesh(ringGeometry, material);
     this.scene.add(this.metalMesh);
 
-    // Add a stone on top
     if (this.config.stoneType !== 'None') {
       this.addStone();
     }
@@ -247,7 +269,8 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
       Diamond: 0xffffff,
       Ruby: 0xe31b23,
       Emerald: 0x009b77,
-      Sapphire: 0x0f52ba
+      Sapphire: 0x0f52ba,
+      Pearl: 0xfdeef4
     };
 
     const stoneGeometry = new THREE.OctahedronGeometry(0.3, 2);
@@ -255,8 +278,8 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
       color: stoneColors[this.config.stoneType] || 0xffffff,
       metalness: 0,
       roughness: 0,
-      transmission: 0.9,
-      ior: 2.42,
+      transmission: this.config.stoneType === 'Pearl' ? 0 : 0.9,
+      ior: this.config.stoneType === 'Diamond' ? 2.42 : 1.77,
       thickness: 0.5
     });
 
@@ -291,23 +314,24 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
   }
 
   private rebuildScene() {
-    while (this.scene.children.length > 3) { // keep lights
+    while (this.scene.children.length > 4) {
       this.scene.remove(this.scene.children[this.scene.children.length - 1]);
     }
     this.createJewellery();
   }
 
   private calculatePrice() {
-    let price = 10000; // base
-    const metalPrices: Record<string, number> = { Gold: 15000, Gold18K: 12000, Silver: 2000, Platinum: 20000, RoseGold: 14000 };
-    price += metalPrices[this.config.metal] || 0;
-
-    if (this.config.stoneType === 'Diamond') {
-      price += this.config.carat * 80000;
-    } else if (this.config.stoneType !== 'None') {
-      price += this.config.carat * 30000;
-    }
-    this.estimatedPrice.set(Math.round(price));
+    this.designService.calculatePrice(this.getDesignPayload()).subscribe({
+      next: (res) => this.estimatedPrice.set(res.estimatedPrice),
+      error: () => {
+        let price = 10000;
+        const metalPrices: Record<string, number> = { Gold: 15000, Gold18K: 12000, Silver: 2000, Platinum: 20000, RoseGold: 14000 };
+        price += metalPrices[this.config.metal] || 0;
+        if (this.config.stoneType === 'Diamond') price += this.config.carat * 80000;
+        else if (this.config.stoneType !== 'None') price += this.config.carat * 30000;
+        this.estimatedPrice.set(Math.round(price));
+      }
+    });
   }
 
   capturePreview() {
@@ -321,24 +345,42 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
 
   saveDesign() {
     this.saving.set(true);
-    this.renderer.render(this.scene, this.camera);
-    const previewDataUrl = this.renderer.domElement.toDataURL('image/png');
-
-    this.http.post<any>(`${environment.apiUrl}/custom-designs`, {
-      baseType: this.config.baseType,
-      metalType: this.config.metal,
-      stoneType: this.config.stoneType,
-      stoneShape: this.config.stoneShape,
-      stoneCarat: this.config.carat,
-      stoneColor: this.config.color,
-      stoneClarity: this.config.clarity,
-      configurationJson: JSON.stringify(this.config),
-      estimatedPrice: this.estimatedPrice(),
-      previewImage: previewDataUrl
-    }).subscribe({
+    this.designService.saveDesign(this.getDesignPayload()).subscribe({
       next: () => this.saving.set(false),
       error: () => this.saving.set(false)
     });
+  }
+
+  saveAndAddToCart() {
+    this.saving.set(true);
+    this.designService.saveDesign(this.getDesignPayload()).subscribe({
+      next: (design) => {
+        this.cartService.addCustomDesign(design.id).subscribe({
+          next: () => {
+            this.saving.set(false);
+            this.router.navigate(['/cart']);
+          },
+          error: () => this.saving.set(false)
+        });
+      },
+      error: () => this.saving.set(false)
+    });
+  }
+
+  private getDesignPayload() {
+    this.renderer.render(this.scene, this.camera);
+    return {
+      baseType: this.config.baseType,
+      metalType: this.config.metal,
+      purity: this.config.purity,
+      stoneType: this.config.stoneType,
+      stoneShape: this.config.stoneShape,
+      stoneColor: this.config.color,
+      stoneClarity: this.config.clarity,
+      stoneCarat: this.config.carat,
+      configurationJson: JSON.stringify(this.config),
+      previewImageUrl: this.renderer.domElement.toDataURL('image/png')
+    };
   }
 
   private animate() {

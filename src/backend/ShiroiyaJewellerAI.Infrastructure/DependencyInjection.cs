@@ -51,6 +51,11 @@ public static class DependencyInjection
         });
 
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IStripeService, StripeService>();
+        services.AddScoped<IBlobStorageService, BlobStorageService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<ICertificateService, CertificateService>();
+        services.AddScoped<IAIService, AIService>();
 
         services.AddStackExchangeRedisCache(options =>
         {

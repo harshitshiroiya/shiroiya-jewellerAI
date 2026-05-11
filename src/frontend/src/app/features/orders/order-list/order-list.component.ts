@@ -1,9 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { OrderService } from '../../../core/services/order.service';
 import { Order } from '../../../core/models/order.model';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-order-list',
@@ -27,6 +26,7 @@ import { environment } from '../../../../environments/environment';
                   <div>
                     <p class="font-bold text-lg">{{ order.orderNumber }}</p>
                     <p class="text-sm text-gray-500">{{ order.createdAt | date:'mediumDate' }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ order.orderItems.length }} item(s)</p>
                   </div>
                   <div class="text-right">
                     <span class="inline-block px-3 py-1 rounded-full text-xs font-medium"
@@ -34,8 +34,14 @@ import { environment } from '../../../../environments/environment';
                       [class.text-yellow-700]="order.status === 'Confirmed'"
                       [class.bg-blue-100]="order.status === 'InProduction'"
                       [class.text-blue-700]="order.status === 'InProduction'"
+                      [class.bg-purple-100]="order.status === 'QualityCheck'"
+                      [class.text-purple-700]="order.status === 'QualityCheck'"
+                      [class.bg-indigo-100]="order.status === 'Dispatched'"
+                      [class.text-indigo-700]="order.status === 'Dispatched'"
                       [class.bg-green-100]="order.status === 'Delivered'"
-                      [class.text-green-700]="order.status === 'Delivered'">
+                      [class.text-green-700]="order.status === 'Delivered'"
+                      [class.bg-red-100]="order.status === 'Cancelled'"
+                      [class.text-red-700]="order.status === 'Cancelled'">
                       {{ order.status }}
                     </span>
                     <p class="text-lg font-bold text-amber-600 mt-1">₹{{ order.totalAmount | number }}</p>
@@ -52,11 +58,9 @@ import { environment } from '../../../../environments/environment';
 export class OrderListComponent implements OnInit {
   orders = signal<Order[]>([]);
 
-  constructor(private http: HttpClient) {}
+  constructor(private orderService: OrderService) {}
 
   ngOnInit() {
-    this.http.get<Order[]>(`${environment.apiUrl}/orders`).subscribe({
-      next: orders => this.orders.set(orders)
-    });
+    this.orderService.getOrders().subscribe(orders => this.orders.set(orders));
   }
 }

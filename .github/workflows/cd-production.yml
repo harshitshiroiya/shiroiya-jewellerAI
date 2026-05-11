@@ -1,0 +1,82 @@
+name: CD - Production
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+env:
+  AZURE_RESOURCE_GROUP: rg-shiroiya-prod
+  ACR_NAME: acrshiroiyaprod
+  ENVIRONMENT: prod
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-infra:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep
+        uses: azure/arm-deploy@v2
+        with:
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          template: infra/main.bicep
+          parameters: environment=prod sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: deploy-infra
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push API image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/api:${{ github.sha }} ./src/backend
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api:${{ github.sha }}
+
+      - name: Build and push Frontend image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} ./src/frontend
+          docker push ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
+
+      - name: Deploy API to Container Apps
+        run: |
+          az containerapp update \
+            --name ca-api-shiroiya-prod \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/api:${{ github.sha }}
+
+      - name: Deploy Frontend to Container Apps
+        run: |
+          az containerapp update \
+            --name ca-frontend-shiroiya-prod \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
+
+      - name: Health Check
+        run: |
+          sleep 30
+          curl --fail https://ca-frontend-shiroiya-prod.*.azurecontainerapps.io/ || exit 1

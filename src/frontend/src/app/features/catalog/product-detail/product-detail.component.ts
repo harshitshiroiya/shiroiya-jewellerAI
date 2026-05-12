@@ -12,27 +12,28 @@ import { Product } from '../../../core/models/product.model';
   template: `
     <div class="min-h-screen bg-white">
       @if (product(); as p) {
-        <div class="container mx-auto px-6 py-8">
-          <nav class="text-sm text-gray-500 mb-6">
-            <a routerLink="/catalog" class="hover:text-amber-600">Catalog</a> / {{ p.name }}
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+          <nav class="text-xs text-stone-400 mb-8">
+            <a routerLink="/catalog" class="hover:text-stone-700 transition-colors">Collection</a>
+            <span class="mx-2">/</span>
+            <span class="text-stone-600">{{ p.name }}</span>
           </nav>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <!-- Image Gallery -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
             <div>
-              <div class="aspect-square bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+              <div class="aspect-square bg-stone-100 rounded-lg flex items-center justify-center overflow-hidden">
                 @if (p.imageUrls.length > 0) {
                   <img [src]="p.imageUrls[selectedImage()]" [alt]="p.name" class="w-full h-full object-cover" />
                 } @else {
-                  <span class="text-6xl">💎</span>
+                  <span class="text-6xl opacity-30">&#10022;</span>
                 }
               </div>
               @if (p.imageUrls.length > 1) {
-                <div class="flex gap-2 mt-4">
+                <div class="flex gap-2 mt-3">
                   @for (img of p.imageUrls; track img; let i = $index) {
                     <button (click)="selectedImage.set(i)"
-                      [class.ring-2]="selectedImage() === i"
-                      class="w-16 h-16 rounded-lg overflow-hidden ring-amber-500">
+                      [class]="selectedImage() === i ? 'ring-2 ring-amber-600 ring-offset-1' : 'border border-stone-200'"
+                      class="w-14 h-14 rounded overflow-hidden">
                       <img [src]="img" class="w-full h-full object-cover" />
                     </button>
                   }
@@ -40,60 +41,66 @@ import { Product } from '../../../core/models/product.model';
               }
             </div>
 
-            <!-- Product Info -->
             <div>
-              <h1 class="text-3xl font-bold text-gray-900">{{ p.name }}</h1>
-              <p class="text-gray-600 mt-2">{{ p.description }}</p>
+              <p class="text-xs text-stone-400 uppercase tracking-widest font-medium">{{ p.metalType }}</p>
+              <h1 class="text-2xl font-bold text-stone-900 tracking-tight mt-2">{{ p.name }}</h1>
+              <p class="text-sm text-stone-500 mt-3 leading-relaxed">{{ p.description }}</p>
 
-              <div class="mt-6 space-y-3">
-                <div class="flex justify-between py-2 border-b">
-                  <span class="text-gray-500">Metal</span>
-                  <span class="font-medium">{{ p.metalType }} ({{ p.purity }})</span>
+              <div class="mt-8 border-t border-stone-100 pt-6 space-y-3">
+                <div class="flex justify-between py-1.5 text-sm">
+                  <span class="text-stone-400">Metal</span>
+                  <span class="font-medium text-stone-800">{{ p.metalType }} ({{ p.purity }})</span>
                 </div>
-                <div class="flex justify-between py-2 border-b">
-                  <span class="text-gray-500">Weight</span>
-                  <span class="font-medium">{{ p.weightInGrams }}g</span>
+                <div class="flex justify-between py-1.5 text-sm">
+                  <span class="text-stone-400">Weight</span>
+                  <span class="font-medium text-stone-800">{{ p.weightInGrams }}g</span>
                 </div>
                 @if (p.stoneType !== 'None') {
-                  <div class="flex justify-between py-2 border-b">
-                    <span class="text-gray-500">Stone</span>
-                    <span class="font-medium">{{ p.stoneType }} ({{ p.stoneShape }})</span>
+                  <div class="flex justify-between py-1.5 text-sm">
+                    <span class="text-stone-400">Stone</span>
+                    <span class="font-medium text-stone-800">{{ p.stoneType }} ({{ p.stoneShape }})</span>
                   </div>
                   @if (p.stoneCarat) {
-                    <div class="flex justify-between py-2 border-b">
-                      <span class="text-gray-500">Carat</span>
-                      <span class="font-medium">{{ p.stoneCarat }} ct</span>
+                    <div class="flex justify-between py-1.5 text-sm">
+                      <span class="text-stone-400">Carat</span>
+                      <span class="font-medium text-stone-800">{{ p.stoneCarat }} ct</span>
                     </div>
                   }
                   @if (p.stoneClarity) {
-                    <div class="flex justify-between py-2 border-b">
-                      <span class="text-gray-500">Clarity</span>
-                      <span class="font-medium">{{ p.stoneClarity }}</span>
+                    <div class="flex justify-between py-1.5 text-sm">
+                      <span class="text-stone-400">Clarity</span>
+                      <span class="font-medium text-stone-800">{{ p.stoneClarity }}</span>
                     </div>
                   }
                 }
               </div>
 
-              <div class="mt-8">
-                <div class="flex items-center gap-3">
-                  <span class="text-3xl font-bold text-amber-600">₹{{ p.sellingPrice | number }}</span>
+              <div class="mt-8 border-t border-stone-100 pt-6">
+                <div class="flex items-baseline gap-3">
+                  <span class="text-2xl font-bold text-stone-900">&#8377;{{ p.sellingPrice | number }}</span>
                   @if (p.discountPercent > 0) {
-                    <span class="text-lg text-gray-400 line-through">₹{{ p.basePrice | number }}</span>
-                    <span class="text-sm bg-red-100 text-red-600 px-2 py-1 rounded">{{ p.discountPercent }}% OFF</span>
+                    <span class="text-sm text-stone-400 line-through">&#8377;{{ p.basePrice | number }}</span>
+                    <span class="text-[11px] font-semibold bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100">-{{ p.discountPercent }}%</span>
                   }
                 </div>
-                <p class="text-sm text-gray-500 mt-1">Inclusive of all taxes</p>
+                <p class="text-xs text-stone-400 mt-1">Inclusive of all taxes</p>
               </div>
 
-              <div class="mt-8 flex gap-4">
-                <button (click)="addToCart(p.id)" [disabled]="addingToCart()"
-                  class="flex-1 py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition disabled:opacity-50">
-                  {{ addingToCart() ? 'Adding...' : 'Add to Cart' }}
+              <div class="mt-8">
+                <button (click)="addToCart(p.id)" [disabled]="addingToCart() || p.stockQuantity === 0"
+                  class="w-full py-3 bg-stone-900 text-white rounded text-sm font-semibold hover:bg-stone-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  {{ addingToCart() ? 'Adding...' : p.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart' }}
                 </button>
               </div>
 
-              <p class="mt-4 text-sm" [class.text-green-600]="p.stockQuantity > 0" [class.text-red-600]="p.stockQuantity === 0">
-                {{ p.stockQuantity > 0 ? 'In Stock (' + p.stockQuantity + ' available)' : 'Out of Stock' }}
+              <p class="mt-3 text-xs text-center"
+                [class.text-green-700]="p.stockQuantity > 0"
+                [class.text-red-600]="p.stockQuantity === 0">
+                @if (p.stockQuantity > 0) {
+                  In stock &middot; {{ p.stockQuantity }} available
+                } @else {
+                  Currently out of stock
+                }
               </p>
             </div>
           </div>

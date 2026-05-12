@@ -36,3 +36,6 @@ Thumbs.db
 
 # Build artifacts
 publish/
+
+# Generated CSS (built from src/input.css via Tailwind CLI)
+src/frontend/src/styles.css

@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "tailwind": "tailwindcss --input src/input.css --output src/styles.css",
+    "tailwind:watch": "tailwindcss --input src/input.css --output src/styles.css --watch",
+    "prestart": "npm run tailwind",
     "start": "ng serve",
+    "prebuild": "npm run tailwind",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -11,7 +15,7 @@
   "private": true,
   "packageManager": "npm@11.2.0",
   "dependencies": {
-    "@angular/animations": "^19.2.21",
+    "@angular/animations": "^21.2.0",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
@@ -19,13 +23,10 @@
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
     "@stripe/stripe-js": "^8.11.0",
-    "@tailwindcss/postcss": "^4.3.0",
     "@types/three": "^0.184.1",
     "marked": "^18.0.3",
     "ngx-stripe": "^21.8.0",
-    "postcss": "^8.5.14",
     "rxjs": "~7.8.0",
-    "tailwindcss": "^4.3.0",
     "three": "^0.184.0",
     "tslib": "^2.3.0"
   },
@@ -33,6 +34,8 @@
     "@angular/build": "^21.2.10",
     "@angular/cli": "^21.2.10",
     "@angular/compiler-cli": "^21.2.0",
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   }

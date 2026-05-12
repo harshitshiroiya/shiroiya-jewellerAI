@@ -1,8 +1,6 @@
 param location string
 param envSuffix string
 param environment string
-param acrLoginServer string = ''
-param acrName string = ''
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: 'log-${envSuffix}'
@@ -38,25 +36,12 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 8080
         transport: 'http'
       }
-      registries: acrLoginServer != '' ? [
-        {
-          server: acrLoginServer
-          username: acrName
-          passwordSecretRef: 'acr-password'
-        }
-      ] : []
-      secrets: acrLoginServer != '' ? [
-        {
-          name: 'acr-password'
-          value: 'placeholder'
-        }
-      ] : []
     }
     template: {
       containers: [
         {
           name: 'api'
-          image: acrLoginServer != '' ? '${acrLoginServer}/api:latest' : 'mcr.microsoft.com/dotnet/aspnet:9.0'
+          image: 'mcr.microsoft.com/dotnet/aspnet:9.0'
           resources: {
             cpu: json(environment == 'prod' ? '1.0' : '0.5')
             memory: environment == 'prod' ? '2Gi' : '1Gi'
@@ -85,25 +70,12 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 80
         transport: 'http'
       }
-      registries: acrLoginServer != '' ? [
-        {
-          server: acrLoginServer
-          username: acrName
-          passwordSecretRef: 'acr-password'
-        }
-      ] : []
-      secrets: acrLoginServer != '' ? [
-        {
-          name: 'acr-password'
-          value: 'placeholder'
-        }
-      ] : []
     }
     template: {
       containers: [
         {
           name: 'frontend'
-          image: acrLoginServer != '' ? '${acrLoginServer}/frontend:latest' : 'nginx:alpine'
+          image: 'nginx:alpine'
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'

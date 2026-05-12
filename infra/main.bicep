@@ -16,20 +16,22 @@ param projectName string = 'shiroiya'
 
 var envSuffix = '${projectName}-${environment}'
 
+module acr 'modules/acr.bicep' = {
+  name: 'acr'
+  params: {
+    location: location
+    envSuffix: envSuffix
+  }
+}
+
 module containerApps 'modules/container-apps.bicep' = {
   name: 'containerApps'
   params: {
     location: location
     envSuffix: envSuffix
     environment: environment
-  }
-}
-
-module acr 'modules/acr.bicep' = {
-  name: 'acr'
-  params: {
-    location: location
-    envSuffix: envSuffix
+    acrLoginServer: acr.outputs.loginServer
+    acrName: acr.outputs.acrName
   }
 }
 
@@ -53,7 +55,7 @@ module storage 'modules/storage.bicep' = {
 module openai 'modules/cognitive-services.bicep' = {
   name: 'openai'
   params: {
-    location: location
+    location: 'eastus2'
     envSuffix: envSuffix
   }
 }
@@ -68,13 +70,32 @@ module keyVault 'modules/key-vault.bicep' = {
 
 module appInsights 'modules/application-insights.bicep' = {
   name: 'appInsights'
+  dependsOn: [containerApps]
   params: {
     location: location
     envSuffix: envSuffix
   }
 }
 
+module redis 'modules/redis.bicep' = {
+  name: 'redis'
+  params: {
+    location: location
+    envSuffix: envSuffix
+    environment: environment
+  }
+}
+
 output containerAppsEnvironmentId string = containerApps.outputs.environmentId
+output apiFqdn string = containerApps.outputs.apiFqdn
+output frontendFqdn string = containerApps.outputs.frontendFqdn
 output acrLoginServer string = acr.outputs.loginServer
+output acrName string = acr.outputs.acrName
 output sqlServerFqdn string = sql.outputs.serverFqdn
+output sqlDatabaseName string = sql.outputs.databaseName
 output storageAccountName string = storage.outputs.accountName
+output storageBlobEndpoint string = storage.outputs.blobEndpoint
+output openaiEndpoint string = openai.outputs.endpoint
+output keyVaultUri string = keyVault.outputs.vaultUri
+output appInsightsConnectionString string = appInsights.outputs.connectionString
+output redisConnectionString string = redis.outputs.connectionString

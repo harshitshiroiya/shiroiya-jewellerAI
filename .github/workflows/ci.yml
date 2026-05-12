@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  backend-build-test:
+  backend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,20 @@ jobs:
       - name: Test
         run: dotnet test src/backend/ShiroiyaJewellerAI.sln --no-build -c Release --verbosity normal
 
-  frontend-build-test:
+  database-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build DACPAC
+        run: dotnet build src/database/ShiroiyaJewellerAI.Database.sqlproj -c Release
+
+  frontend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +50,13 @@ jobs:
           cache-dependency-path: src/frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         working-directory: src/frontend
 
-      - name: Build
+      - name: Build Tailwind CSS
+        run: npx @tailwindcss/cli --input src/input.css --output src/styles.css
+        working-directory: src/frontend
+
+      - name: Build Angular
         run: npx ng build --configuration=production
         working-directory: src/frontend

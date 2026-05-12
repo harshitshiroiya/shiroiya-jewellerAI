@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API (.NET)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/src/backend/ShiroiyaJewellerAI.WebApi/ShiroiyaJewellerAI.WebApi.csproj",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5000",
+        "DOTNET_ROOT": "/Users/harshitshiroiya/.dotnet"
+      }
+    },
+    {
+      "name": "Frontend (Angular)",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "run-frontend",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/src/frontend/src"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack (API + Frontend)",
+      "configurations": ["API (.NET)", "Frontend (Angular)"],
+      "stopAll": true
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "dotnetAcquisitionExtension.existingDotnetPath": [
+    {
+      "extensionId": "ms-dotnettools.csharp",
+      "path": "/Users/harshitshiroiya/.dotnet/dotnet"
+    },
+    {
+      "extensionId": "ms-dotnettools.csdevkit",
+      "path": "/Users/harshitshiroiya/.dotnet/dotnet"
+    }
+  ],
+  "omnisharp.dotNetCliPaths": ["/Users/harshitshiroiya/.dotnet/dotnet"],
+  "terminal.integrated.env.osx": {
+    "PATH": "/Users/harshitshiroiya/.dotnet:/Users/harshitshiroiya/.npm-global/bin:/Users/harshitshiroiya/.nvm/versions/node/v23.9.0/bin:${env:PATH}",
+    "DOTNET_ROOT": "/Users/harshitshiroiya/.dotnet"
+  }
+}

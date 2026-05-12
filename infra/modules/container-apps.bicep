@@ -1,6 +1,8 @@
 param location string
 param envSuffix string
 param environment string
+param acrLoginServer string = ''
+param acrName string = ''
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: 'log-${envSuffix}'
@@ -36,21 +38,36 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 8080
         transport: 'http'
       }
-      registries: []
+      registries: acrLoginServer != '' ? [
+        {
+          server: acrLoginServer
+          username: acrName
+          passwordSecretRef: 'acr-password'
+        }
+      ] : []
+      secrets: acrLoginServer != '' ? [
+        {
+          name: 'acr-password'
+          value: 'placeholder'
+        }
+      ] : []
     }
     template: {
       containers: [
         {
           name: 'api'
-          image: 'mcr.microsoft.com/dotnet/aspnet:9.0'
+          image: acrLoginServer != '' ? '${acrLoginServer}/api:latest' : 'mcr.microsoft.com/dotnet/aspnet:9.0'
           resources: {
             cpu: json(environment == 'prod' ? '1.0' : '0.5')
             memory: environment == 'prod' ? '2Gi' : '1Gi'
           }
+          env: [
+            { name: 'ASPNETCORE_ENVIRONMENT', value: environment == 'prod' ? 'Production' : 'Development' }
+          ]
         }
       ]
       scale: {
-        minReplicas: environment == 'prod' ? 2 : 1
+        minReplicas: environment == 'prod' ? 2 : 0
         maxReplicas: environment == 'prod' ? 10 : 3
       }
     }
@@ -68,12 +85,25 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 80
         transport: 'http'
       }
+      registries: acrLoginServer != '' ? [
+        {
+          server: acrLoginServer
+          username: acrName
+          passwordSecretRef: 'acr-password'
+        }
+      ] : []
+      secrets: acrLoginServer != '' ? [
+        {
+          name: 'acr-password'
+          value: 'placeholder'
+        }
+      ] : []
     }
     template: {
       containers: [
         {
           name: 'frontend'
-          image: 'nginx:alpine'
+          image: acrLoginServer != '' ? '${acrLoginServer}/frontend:latest' : 'nginx:alpine'
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'
@@ -91,3 +121,4 @@ resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
 output environmentId string = containerAppEnv.id
 output apiFqdn string = apiApp.properties.configuration.ingress.fqdn
 output frontendFqdn string = frontendApp.properties.configuration.ingress.fqdn
+output logAnalyticsId string = logAnalytics.id

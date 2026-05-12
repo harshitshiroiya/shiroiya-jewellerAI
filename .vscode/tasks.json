@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-api",
+      "type": "shell",
+      "command": "/Users/harshitshiroiya/.dotnet/dotnet build ${workspaceFolder}/src/backend/ShiroiyaJewellerAI.WebApi/ShiroiyaJewellerAI.WebApi.csproj /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary;ForceNoAlign",
+      "options": {
+        "env": {
+          "DOTNET_ROOT": "/Users/harshitshiroiya/.dotnet",
+          "PATH": "/Users/harshitshiroiya/.dotnet:/usr/local/bin:/usr/bin:/bin"
+        }
+      },
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "build-css",
+      "type": "shell",
+      "command": "/Users/harshitshiroiya/.nvm/versions/node/v23.9.0/bin/npx @tailwindcss/cli --input src/input.css --output src/styles.css",
+      "options": {
+        "cwd": "${workspaceFolder}/src/frontend",
+        "env": {
+          "PATH": "/Users/harshitshiroiya/.nvm/versions/node/v23.9.0/bin:/Users/harshitshiroiya/.npm-global/bin:/usr/local/bin:/usr/bin:/bin"
+        }
+      },
+      "group": "build"
+    },
+    {
+      "label": "run-frontend",
+      "type": "shell",
+      "command": "/Users/harshitshiroiya/.nvm/versions/node/v23.9.0/bin/npx ng serve --open",
+      "dependsOn": "build-css",
+      "options": {
+        "cwd": "${workspaceFolder}/src/frontend",
+        "env": {
+          "PATH": "/Users/harshitshiroiya/.nvm/versions/node/v23.9.0/bin:/Users/harshitshiroiya/.npm-global/bin:/usr/local/bin:/usr/bin:/bin",
+          "NODE_PATH": "/Users/harshitshiroiya/.nvm/versions/node/v23.9.0/lib/node_modules"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "angular",
+        "pattern": {
+          "regexp": "^(ERROR|Error)\\b",
+          "message": 0
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*initial chunk files.*|.*Compiling.*|.*Building.*|.*browser application bundle.*",
+          "endsPattern": ".*Application bundle generation complete.*|.*Compiled successfully.*|.*complete.*|.*localhost:4200.*"
+        }
+      },
+      "group": "build"
+    }
+  ]
+}

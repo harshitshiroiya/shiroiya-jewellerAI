@@ -71,12 +71,16 @@ jobs:
             --start-ip-address $RUNNER_IP \
             --end-ip-address $RUNNER_IP
 
+      - name: Install sqlpackage
+        run: |
+          dotnet tool install -g microsoft.sqlpackage
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
       - name: Deploy DACPAC
-        uses: azure/sql-action@v2.3
-        with:
-          connection-string: Server=${{ needs.deploy-infra.outputs.sql-server-fqdn }};Initial Catalog=${{ env.SQL_DATABASE_NAME }};User ID=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;
-          path: src/database/bin/Release/ShiroiyaJewellerAI.Database.dacpac
-          action: publish
+        run: |
+          sqlpackage /Action:Publish \
+            /SourceFile:src/database/bin/Release/ShiroiyaJewellerAI.Database.dacpac \
+            /TargetConnectionString:"Server=${{ needs.deploy-infra.outputs.sql-server-fqdn }};Initial Catalog=${{ env.SQL_DATABASE_NAME }};User ID=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;"
 
       - name: Remove runner IP from SQL firewall
         if: always()

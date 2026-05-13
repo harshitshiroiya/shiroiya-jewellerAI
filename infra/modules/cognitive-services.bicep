@@ -30,6 +30,7 @@ resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-
 resource dalleDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-10-01-preview' = {
   parent: openai
   name: 'dall-e-3'
+  dependsOn: [gpt4oDeployment]
   sku: {
     name: 'Standard'
     capacity: 1

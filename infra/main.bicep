@@ -30,8 +30,6 @@ module containerApps 'modules/container-apps.bicep' = {
     location: location
     envSuffix: envSuffix
     environment: environment
-    acrLoginServer: acr.outputs.loginServer
-    acrName: acr.outputs.acrName
   }
 }
 
@@ -98,4 +96,4 @@ output storageBlobEndpoint string = storage.outputs.blobEndpoint
 output openaiEndpoint string = openai.outputs.endpoint
 output keyVaultUri string = keyVault.outputs.vaultUri
 output appInsightsConnectionString string = appInsights.outputs.connectionString
-output redisConnectionString string = redis.outputs.connectionString
+output redisHostName string = redis.outputs.hostName

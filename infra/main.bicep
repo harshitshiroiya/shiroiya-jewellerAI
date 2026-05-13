@@ -53,7 +53,7 @@ module storage 'modules/storage.bicep' = {
 module openai 'modules/cognitive-services.bicep' = {
   name: 'openai'
   params: {
-    location: 'eastus2'
+    location: 'swedencentral'
     envSuffix: envSuffix
   }
 }

@@ -12,6 +12,11 @@ on:
           - dev
           - staging
           - prod
+      branch:
+        description: 'Branch to deploy from'
+        required: false
+        default: 'main'
+        type: string
 
 env:
   AZURE_RESOURCE_GROUP: rg-shiroiya-${{ github.event.inputs.environment }}

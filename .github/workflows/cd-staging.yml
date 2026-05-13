@@ -72,7 +72,7 @@ jobs:
         uses: azure/sql-action@v2.3
         with:
           connection-string: Server=${{ needs.deploy-infra.outputs.sql-server-fqdn }};Initial Catalog=${{ env.SQL_DATABASE_NAME }};User ID=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;
-          dacpac-package: src/database/bin/Release/ShiroiyaJewellerAI.Database.dacpac
+          path: src/database/bin/Release/ShiroiyaJewellerAI.Database.dacpac
           action: publish
 
       - name: Remove runner IP from SQL firewall

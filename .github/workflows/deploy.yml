@@ -165,6 +165,22 @@ jobs:
           echo "::add-mask::$ACR_PASSWORD"
           echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
 
+      - name: Configure ACR registry on Container Apps
+        run: |
+          az containerapp registry set \
+            --name ca-api-shiroiya-${{ env.ENVIRONMENT }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --server ${{ needs.deploy-infrastructure.outputs.acr-login-server }} \
+            --username ${{ env.ACR_NAME }} \
+            --password "${{ steps.acr-creds.outputs.password }}"
+
+          az containerapp registry set \
+            --name ca-frontend-shiroiya-${{ env.ENVIRONMENT }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --server ${{ needs.deploy-infrastructure.outputs.acr-login-server }} \
+            --username ${{ env.ACR_NAME }} \
+            --password "${{ steps.acr-creds.outputs.password }}"
+
       - name: Deploy API Container App
         run: |
           az containerapp update \
@@ -175,26 +191,12 @@ jobs:
               "ConnectionStrings__DefaultConnection=Server=${{ needs.deploy-infrastructure.outputs.sql-server-fqdn }};Database=${{ env.SQL_DATABASE_NAME }};User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;" \
               "ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}"
 
-          az containerapp registry set \
-            --name ca-api-shiroiya-${{ env.ENVIRONMENT }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --server ${{ needs.deploy-infrastructure.outputs.acr-login-server }} \
-            --username ${{ env.ACR_NAME }} \
-            --password ${{ steps.acr-creds.outputs.password }}
-
       - name: Deploy Frontend Container App
         run: |
           az containerapp update \
             --name ca-frontend-shiroiya-${{ env.ENVIRONMENT }} \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --image ${{ needs.deploy-infrastructure.outputs.acr-login-server }}/frontend:${{ github.sha }}
-
-          az containerapp registry set \
-            --name ca-frontend-shiroiya-${{ env.ENVIRONMENT }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --server ${{ needs.deploy-infrastructure.outputs.acr-login-server }} \
-            --username ${{ env.ACR_NAME }} \
-            --password ${{ steps.acr-creds.outputs.password }}
 
       - name: Output deployment URLs
         run: |

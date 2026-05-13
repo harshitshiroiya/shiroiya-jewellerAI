@@ -132,10 +132,26 @@ jobs:
             ./src/frontend
           docker push ${{ env.ACR_NAME }}.azurecr.io/frontend --all-tags
 
-      - name: Deploy to Container Apps
+      - name: Configure ACR registry on Container Apps
         run: |
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query "passwords[0].value" -o tsv)
 
+          az containerapp registry set \
+            --name ca-api-shiroiya-prod \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --server ${{ env.ACR_NAME }}.azurecr.io \
+            --username ${{ env.ACR_NAME }} \
+            --password "$ACR_PASSWORD"
+
+          az containerapp registry set \
+            --name ca-frontend-shiroiya-prod \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --server ${{ env.ACR_NAME }}.azurecr.io \
+            --username ${{ env.ACR_NAME }} \
+            --password "$ACR_PASSWORD"
+
+      - name: Deploy Container Apps
+        run: |
           az containerapp update \
             --name ca-api-shiroiya-prod \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
@@ -144,25 +160,11 @@ jobs:
               "ConnectionStrings__DefaultConnection=Server=${{ needs.deploy-infra.outputs.sql-server-fqdn }};Database=${{ env.SQL_DATABASE_NAME }};User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;" \
               "ASPNETCORE_ENVIRONMENT=Production"
 
-          az containerapp registry set \
-            --name ca-api-shiroiya-prod \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --server ${{ env.ACR_NAME }}.azurecr.io \
-            --username ${{ env.ACR_NAME }} \
-            --password "$ACR_PASSWORD"
-
           az containerapp update \
             --name ca-frontend-shiroiya-prod \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} \
             --set-env-vars "API_URL=https://${{ needs.deploy-infra.outputs.api-fqdn }}"
-
-          az containerapp registry set \
-            --name ca-frontend-shiroiya-prod \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --server ${{ env.ACR_NAME }}.azurecr.io \
-            --username ${{ env.ACR_NAME }} \
-            --password "$ACR_PASSWORD"
 
       - name: Deployment Summary
         run: |

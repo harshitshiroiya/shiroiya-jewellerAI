@@ -11,10 +11,10 @@ import { Address } from '../../core/models/order.model';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="min-h-screen bg-stone-50">
-      <div class="bg-white border-b border-stone-100">
+    <div class="min-h-screen bg-champagne-50">
+      <div class="bg-white border-b border-champagne-100">
         <div class="max-w-7xl mx-auto px-6 lg:px-8 py-10">
-          <h1 class="text-3xl font-bold text-stone-900 tracking-tight">Checkout</h1>
+          <h1 class="text-3xl font-bold text-champagne-900 tracking-tight">Checkout</h1>
         </div>
       </div>
 
@@ -22,86 +22,86 @@ import { Address } from '../../core/models/order.model';
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div class="lg:col-span-2 space-y-5">
             @if (savedAddresses().length > 0) {
-              <div class="bg-white border border-stone-100 rounded-lg p-6">
-                <h2 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-4">Delivery Address</h2>
+              <div class="bg-white border border-champagne-100 rounded-lg p-6">
+                <h2 class="text-xs font-semibold text-champagne-600 uppercase tracking-wide mb-4">Delivery Address</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   @for (addr of savedAddresses(); track addr.id) {
                     <div (click)="selectAddress(addr)"
                       [class]="selectedAddressId() === addr.id
-                        ? 'border-amber-600 bg-amber-50/40 ring-1 ring-amber-600/20'
-                        : 'border-stone-200 hover:border-stone-300'"
+                        ? 'border-champagne-600 bg-champagne-50/40 ring-1 ring-champagne-300'
+                        : 'border-champagne-200 hover:border-champagne-300'"
                       class="p-4 border rounded-lg cursor-pointer transition-all duration-200">
-                      <p class="text-sm font-semibold text-stone-800">{{ addr.label }}</p>
-                      <p class="text-xs text-stone-500 mt-1">{{ addr.line1 }}</p>
-                      <p class="text-xs text-stone-500">{{ addr.city }}, {{ addr.state }} {{ addr.postalCode }}</p>
+                      <p class="text-sm font-semibold text-champagne-800">{{ addr.label }}</p>
+                      <p class="text-xs text-champagne-500 mt-1">{{ addr.line1 }}</p>
+                      <p class="text-xs text-champagne-500">{{ addr.city }}, {{ addr.state }} {{ addr.postalCode }}</p>
                     </div>
                   }
                 </div>
-                <button (click)="showNewAddress.set(true)" class="mt-4 text-xs font-semibold text-amber-700 hover:text-amber-800">
+                <button (click)="showNewAddress.set(true)" class="mt-4 text-xs font-semibold text-champagne-700 hover:text-champagne-800">
                   + Add new address
                 </button>
               </div>
             }
 
             @if (savedAddresses().length === 0 || showNewAddress()) {
-              <div class="bg-white border border-stone-100 rounded-lg p-6">
-                <h2 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-4">New Address</h2>
+              <div class="bg-white border border-champagne-100 rounded-lg p-6">
+                <h2 class="text-xs font-semibold text-champagne-600 uppercase tracking-wide mb-4">New Address</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Label</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">Label</label>
                     <input type="text" [(ngModel)]="address.label"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition"
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition"
                       placeholder="Home, Office" />
                   </div>
                   <div></div>
                   <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Address Line 1</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">Address Line 1</label>
                     <input type="text" [(ngModel)]="address.line1"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition"
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition"
                       placeholder="House/Flat No., Street" />
                   </div>
                   <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Address Line 2</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">Address Line 2</label>
                     <input type="text" [(ngModel)]="address.line2"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition"
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition"
                       placeholder="Landmark, Area" />
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">City</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">City</label>
                     <input type="text" [(ngModel)]="address.city"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition" />
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition" />
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">State</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">State</label>
                     <input type="text" [(ngModel)]="address.state"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition" />
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition" />
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Postal Code</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">Postal Code</label>
                     <input type="text" [(ngModel)]="address.postalCode"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition" />
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition" />
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Country</label>
+                    <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1">Country</label>
                     <input type="text" [(ngModel)]="address.country"
-                      class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition" />
+                      class="w-full px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition" />
                   </div>
                 </div>
                 <button (click)="saveAddress()"
-                  class="mt-4 px-5 py-2 bg-stone-900 text-white rounded text-xs font-semibold hover:bg-stone-800 transition-colors">
+                  class="mt-4 px-5 py-2 bg-champagne-900 text-white rounded text-xs font-semibold hover:bg-champagne-800 transition-colors">
                   Save Address
                 </button>
               </div>
             }
 
-            <div class="bg-white border border-stone-100 rounded-lg p-6">
-              <h2 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">Promo Code</h2>
+            <div class="bg-white border border-champagne-100 rounded-lg p-6">
+              <h2 class="text-xs font-semibold text-champagne-600 uppercase tracking-wide mb-3">Promo Code</h2>
               <div class="flex gap-2">
                 <input type="text" [(ngModel)]="promoCode"
-                  class="flex-1 px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition"
+                  class="flex-1 px-3.5 py-2.5 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400 transition"
                   placeholder="Enter code" />
                 <button (click)="applyPromo()"
-                  class="px-5 py-2.5 bg-stone-900 text-white rounded text-xs font-semibold hover:bg-stone-800 transition-colors">
+                  class="px-5 py-2.5 bg-champagne-900 text-white rounded text-xs font-semibold hover:bg-champagne-800 transition-colors">
                   Apply
                 </button>
               </div>
@@ -116,18 +116,18 @@ import { Address } from '../../core/models/order.model';
           </div>
 
           <div class="lg:sticky lg:top-24 h-fit">
-            <div class="bg-white border border-stone-100 rounded-lg p-6">
-              <h3 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-4">Order Summary</h3>
+            <div class="bg-white border border-champagne-100 rounded-lg p-6">
+              <h3 class="text-xs font-semibold text-champagne-600 uppercase tracking-wide mb-4">Order Summary</h3>
               <div class="space-y-3 text-sm">
-                <div class="flex justify-between text-stone-600">
+                <div class="flex justify-between text-champagne-600">
                   <span>Subtotal</span>
                   <span>&#8377;{{ cartService.totalPrice() | number:'1.0-0' }}</span>
                 </div>
-                <div class="flex justify-between text-stone-600">
+                <div class="flex justify-between text-champagne-600">
                   <span>GST (3%)</span>
                   <span>&#8377;{{ cartService.totalPrice() * 0.03 | number:'1.0-0' }}</span>
                 </div>
-                <div class="flex justify-between text-stone-600">
+                <div class="flex justify-between text-champagne-600">
                   <span>Shipping</span>
                   <span class="text-green-700 font-medium">{{ cartService.totalPrice() > 50000 ? 'Free' : '&#8377;500' }}</span>
                 </div>
@@ -137,14 +137,14 @@ import { Address } from '../../core/models/order.model';
                     <span>-&#8377;{{ promoDiscount() | number:'1.0-0' }}</span>
                   </div>
                 }
-                <div class="border-t border-stone-100 pt-3 flex justify-between font-bold text-stone-900">
+                <div class="border-t border-champagne-100 pt-3 flex justify-between font-bold text-champagne-900">
                   <span>Total</span>
                   <span>&#8377;{{ getTotal() | number:'1.0-0' }}</span>
                 </div>
               </div>
 
               <button (click)="placeOrder()" [disabled]="processing() || !selectedAddressId()"
-                class="w-full mt-5 py-2.5 bg-stone-900 text-white rounded text-sm font-semibold hover:bg-stone-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                class="w-full mt-5 py-2.5 bg-champagne-900 text-white rounded text-sm font-semibold hover:bg-champagne-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                 {{ processing() ? 'Processing...' : 'Place Order & Pay' }}
               </button>
               @if (!selectedAddressId()) {

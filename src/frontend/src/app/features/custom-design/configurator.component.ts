@@ -12,28 +12,28 @@ import { CartService } from '../../core/services/cart.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-[calc(100vh-4rem)] flex bg-stone-950">
+    <div class="h-[calc(100vh-4rem)] flex bg-champagne-900">
       <div class="flex-1 relative">
         <canvas #threeCanvas class="w-full h-full"></canvas>
-        <div class="absolute top-4 left-4 bg-stone-900/80 backdrop-blur-sm text-stone-300 px-3 py-1.5 rounded text-xs tracking-wide">
+        <div class="absolute top-4 left-4 bg-champagne-900/80 backdrop-blur-sm text-champagne-300 px-3 py-1.5 rounded text-xs tracking-wide">
           Drag to rotate &middot; Scroll to zoom
         </div>
       </div>
 
-      <aside class="w-72 bg-white border-l border-stone-100 overflow-y-auto p-5 space-y-5">
+      <aside class="w-72 bg-white border-l border-champagne-100 overflow-y-auto p-5 space-y-5">
         <div>
-          <p class="text-amber-700 text-[10px] font-semibold tracking-[0.2em] uppercase">Bespoke</p>
-          <h2 class="text-base font-bold text-stone-900 tracking-tight mt-0.5">Design Studio</h2>
+          <p class="text-champagne-700 text-[10px] font-semibold tracking-[0.2em] uppercase">Bespoke</p>
+          <h2 class="text-base font-bold text-champagne-900 tracking-tight mt-0.5">Design Studio</h2>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Type</label>
+          <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-2">Type</label>
           <div class="grid grid-cols-3 gap-1.5">
             @for (type of jewelleryTypes; track type.value) {
               <button (click)="setBaseType(type.value)"
                 [class]="config.baseType === type.value
-                  ? 'border-amber-600 bg-amber-50/50 text-amber-800'
-                  : 'border-stone-200 text-stone-600 hover:border-stone-300'"
+                  ? 'border-champagne-600 bg-champagne-50/50 text-champagne-800'
+                  : 'border-champagne-200 text-champagne-600 hover:border-champagne-300'"
                 class="p-2 border rounded text-center text-[11px] font-medium transition-all duration-200">
                 <div class="text-base">{{ type.icon }}</div>
                 <div class="mt-0.5">{{ type.label }}</div>
@@ -43,9 +43,9 @@ import { CartService } from '../../core/services/cart.service';
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Metal</label>
+          <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Metal</label>
           <select [(ngModel)]="config.metal" (ngModelChange)="updateMaterial()"
-            class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+            class="w-full px-3 py-2 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-600">
             <option value="Gold">Gold (22K)</option>
             <option value="Gold18K">Gold (18K)</option>
             <option value="Silver">Silver (925)</option>
@@ -55,9 +55,9 @@ import { CartService } from '../../core/services/cart.service';
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Purity</label>
+          <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Purity</label>
           <select [(ngModel)]="config.purity"
-            class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+            class="w-full px-3 py-2 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-600">
             <option value="22K">22K</option>
             <option value="18K">18K</option>
             <option value="14K">14K</option>
@@ -67,9 +67,9 @@ import { CartService } from '../../core/services/cart.service';
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Stone</label>
+          <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Stone</label>
           <select [(ngModel)]="config.stoneType" (ngModelChange)="updateStone()"
-            class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+            class="w-full px-3 py-2 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-600">
             <option value="None">No Stone</option>
             <option value="Diamond">Diamond</option>
             <option value="Ruby">Ruby</option>
@@ -81,9 +81,9 @@ import { CartService } from '../../core/services/cart.service';
 
         @if (config.stoneType !== 'None') {
           <div>
-            <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Shape</label>
+            <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Shape</label>
             <select [(ngModel)]="config.stoneShape" (ngModelChange)="updateStone()"
-              class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+              class="w-full px-3 py-2 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-600">
               <option value="Round">Round Brilliant</option>
               <option value="Princess">Princess</option>
               <option value="Oval">Oval</option>
@@ -94,15 +94,15 @@ import { CartService } from '../../core/services/cart.service';
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Carat: {{ config.carat }}</label>
+            <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Carat: {{ config.carat }}</label>
             <input type="range" [(ngModel)]="config.carat" min="0.25" max="5" step="0.25" (ngModelChange)="updateStone()"
-              class="w-full accent-amber-600" />
+              class="w-full accent-champagne-600" />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Color</label>
+            <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Color</label>
             <select [(ngModel)]="config.color"
-              class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+              class="w-full px-3 py-2 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-600">
               <option value="D">D (Colorless)</option>
               <option value="E">E (Colorless)</option>
               <option value="F">F (Colorless)</option>
@@ -112,9 +112,9 @@ import { CartService } from '../../core/services/cart.service';
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1.5">Clarity</label>
+            <label class="block text-xs font-semibold text-champagne-500 uppercase tracking-wide mb-1.5">Clarity</label>
             <select [(ngModel)]="config.clarity"
-              class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+              class="w-full px-3 py-2 bg-champagne-50 border border-champagne-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-600">
               <option value="FL">FL (Flawless)</option>
               <option value="IF">IF (Internally Flawless)</option>
               <option value="VVS1">VVS1</option>
@@ -125,22 +125,22 @@ import { CartService } from '../../core/services/cart.service';
           </div>
         }
 
-        <div class="bg-stone-50 border border-stone-100 p-4 rounded-lg">
-          <p class="text-[11px] font-semibold text-stone-400 uppercase tracking-wide">Estimated Price</p>
-          <p class="text-xl font-bold text-stone-900 mt-1">&#8377;{{ estimatedPrice() | number:'1.0-0' }}</p>
+        <div class="bg-champagne-50 border border-champagne-100 p-4 rounded-lg">
+          <p class="text-[11px] font-semibold text-champagne-400 uppercase tracking-wide">Estimated Price</p>
+          <p class="text-xl font-bold text-champagne-900 mt-1">&#8377;{{ estimatedPrice() | number:'1.0-0' }}</p>
         </div>
 
         <div class="space-y-2 pt-2">
           <button (click)="saveAndAddToCart()" [disabled]="saving()"
-            class="w-full py-2.5 bg-stone-900 text-white rounded text-sm font-semibold hover:bg-stone-800 transition-colors disabled:opacity-40">
+            class="w-full py-2.5 bg-champagne-900 text-white rounded text-sm font-semibold hover:bg-champagne-800 transition-colors disabled:opacity-40">
             {{ saving() ? 'Saving...' : 'Save & Add to Cart' }}
           </button>
           <button (click)="saveDesign()" [disabled]="saving()"
-            class="w-full py-2.5 border border-stone-200 text-stone-700 rounded text-sm font-semibold hover:bg-stone-50 transition-colors">
+            class="w-full py-2.5 border border-champagne-200 text-champagne-700 rounded text-sm font-semibold hover:bg-champagne-50 transition-colors">
             Save Draft
           </button>
           <button (click)="capturePreview()"
-            class="w-full py-2.5 text-xs font-medium text-stone-400 hover:text-stone-600 transition-colors">
+            class="w-full py-2.5 text-xs font-medium text-champagne-400 hover:text-champagne-600 transition-colors">
             Download Preview
           </button>
         </div>
@@ -202,7 +202,7 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
   private initScene() {
     const canvas = this.canvasRef.nativeElement;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a1a2e);
+    this.scene.background = new THREE.Color(0x2a1f14);
 
     this.camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
     this.camera.position.set(0, 2, 5);

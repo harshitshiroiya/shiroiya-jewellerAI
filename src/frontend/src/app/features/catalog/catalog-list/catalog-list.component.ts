@@ -10,21 +10,21 @@ import { Product, ProductFilter } from '../../../core/models/product.model';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-stone-50">
-      <div class="bg-white border-b border-stone-100">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-10">
-          <p class="text-amber-700 text-xs font-semibold tracking-[0.2em] uppercase mb-2">Our Collection</p>
-          <h1 class="text-3xl font-bold text-stone-900 tracking-tight">Curated Pieces</h1>
+    <div class="min-h-screen bg-champagne-50">
+      <div class="bg-white border-b border-champagne-100">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+          <p class="text-champagne-500 text-[11px] font-semibold tracking-[0.3em] uppercase mb-2">Our Collection</p>
+          <h1 class="font-serif text-4xl font-light text-champagne-900 italic">Curated Pieces</h1>
         </div>
       </div>
 
       <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <div class="flex flex-col lg:flex-row gap-8">
-          <aside class="w-full lg:w-56 shrink-0 space-y-5">
-            <div class="bg-white border border-stone-100 rounded-lg p-4">
-              <h3 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">Metal</h3>
+          <aside class="w-full lg:w-60 shrink-0 space-y-5">
+            <div class="bg-white border border-champagne-100 rounded-xl p-5">
+              <h3 class="text-[11px] font-semibold text-champagne-700 uppercase tracking-[0.15em] mb-3">Metal</h3>
               <select [(ngModel)]="filter.metal" (ngModelChange)="loadProducts()"
-                class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+                class="w-full px-3.5 py-2.5 bg-champagne-50/50 border border-champagne-200 rounded-lg text-sm text-champagne-800 focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400">
                 <option [ngValue]="undefined">All Metals</option>
                 <option value="Gold">Gold</option>
                 <option value="Silver">Silver</option>
@@ -33,10 +33,10 @@ import { Product, ProductFilter } from '../../../core/models/product.model';
               </select>
             </div>
 
-            <div class="bg-white border border-stone-100 rounded-lg p-4">
-              <h3 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">Stone</h3>
+            <div class="bg-white border border-champagne-100 rounded-xl p-5">
+              <h3 class="text-[11px] font-semibold text-champagne-700 uppercase tracking-[0.15em] mb-3">Stone</h3>
               <select [(ngModel)]="filter.stone" (ngModelChange)="loadProducts()"
-                class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+                class="w-full px-3.5 py-2.5 bg-champagne-50/50 border border-champagne-200 rounded-lg text-sm text-champagne-800 focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400">
                 <option [ngValue]="undefined">All Stones</option>
                 <option value="Diamond">Diamond</option>
                 <option value="Ruby">Ruby</option>
@@ -45,60 +45,60 @@ import { Product, ProductFilter } from '../../../core/models/product.model';
               </select>
             </div>
 
-            <div class="bg-white border border-stone-100 rounded-lg p-4">
-              <h3 class="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">Price</h3>
+            <div class="bg-white border border-champagne-100 rounded-xl p-5">
+              <h3 class="text-[11px] font-semibold text-champagne-700 uppercase tracking-[0.15em] mb-3">Price Range</h3>
               <div class="space-y-2">
                 <input type="number" [(ngModel)]="filter.minPrice" placeholder="Min"
-                  class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600" />
+                  class="w-full px-3.5 py-2.5 bg-champagne-50/50 border border-champagne-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400" />
                 <input type="number" [(ngModel)]="filter.maxPrice" placeholder="Max"
-                  class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600" />
+                  class="w-full px-3.5 py-2.5 bg-champagne-50/50 border border-champagne-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400" />
               </div>
               <button (click)="loadProducts()"
-                class="mt-3 w-full py-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors">
-                Apply Filter
+                class="mt-3 w-full py-2.5 text-xs font-medium text-champagne-800 bg-champagne-100 border border-champagne-200 rounded-lg hover:bg-champagne-200 transition-colors">
+                Apply
               </button>
             </div>
           </aside>
 
           <main class="flex-1">
             <div class="flex justify-between items-center mb-6">
-              <p class="text-sm text-stone-500">{{ totalCount() }} pieces</p>
+              <p class="text-sm text-champagne-600">{{ totalCount() }} pieces</p>
               <select [(ngModel)]="filter.sort" (ngModelChange)="loadProducts()"
-                class="px-3 py-2 bg-white border border-stone-200 rounded text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
-                <option value="name_asc">Name A–Z</option>
+                class="px-3.5 py-2.5 bg-white border border-champagne-200 rounded-lg text-sm text-champagne-700 focus:outline-none focus:ring-2 focus:ring-champagne-300 focus:border-champagne-400">
+                <option value="name_asc">Name A-Z</option>
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
                 <option value="newest">Newest</option>
               </select>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               @for (product of products(); track product.id) {
                 <a [routerLink]="['/catalog', product.id]"
-                  class="group bg-white rounded-lg overflow-hidden border border-stone-100 hover:border-stone-200 hover:shadow-md transition-all duration-300">
-                  <div class="aspect-square bg-stone-100 relative overflow-hidden">
+                  class="group bg-white rounded-2xl overflow-hidden border border-champagne-100 hover:border-champagne-300 hover:shadow-xl hover:shadow-champagne-200/30 transition-all duration-500">
+                  <div class="aspect-square bg-gradient-to-b from-champagne-100 to-champagne-50 relative overflow-hidden">
                     @if (product.imageUrls.length > 0) {
                       <img [src]="product.imageUrls[0]" [alt]="product.name"
-                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                     } @else {
                       <div class="w-full h-full flex items-center justify-center">
-                        <span class="text-5xl opacity-30">&#10022;</span>
+                        <span class="font-serif text-5xl text-champagne-300 italic">S</span>
                       </div>
                     }
                     @if (product.discountPercent > 0) {
-                      <span class="absolute top-3 left-3 text-[11px] font-semibold bg-red-600 text-white px-2 py-0.5 rounded">
+                      <span class="absolute top-3 left-3 text-[10px] font-semibold bg-champagne-900 text-champagne-50 px-2.5 py-1 rounded-full">
                         -{{ product.discountPercent }}%
                       </span>
                     }
                   </div>
-                  <div class="p-4">
-                    <p class="text-xs text-stone-400 uppercase tracking-wide">{{ product.metalType }} {{ product.purity }}</p>
-                    <h3 class="text-sm font-semibold text-stone-900 mt-1 group-hover:text-amber-800 transition-colors">{{ product.name }}</h3>
-                    <p class="text-xs text-stone-400 mt-0.5">{{ product.weightInGrams }}g</p>
-                    <div class="mt-2.5 flex items-baseline gap-2">
-                      <span class="text-base font-bold text-stone-900">&#8377;{{ product.sellingPrice | number }}</span>
+                  <div class="p-5">
+                    <p class="text-[10px] text-champagne-500 uppercase tracking-[0.2em]">{{ product.metalType }} {{ product.purity }}</p>
+                    <h3 class="font-serif text-base text-champagne-900 mt-1.5 group-hover:text-champagne-700 transition-colors">{{ product.name }}</h3>
+                    <p class="text-xs text-champagne-500 mt-0.5">{{ product.weightInGrams }}g</p>
+                    <div class="mt-3 flex items-baseline gap-2">
+                      <span class="text-lg font-semibold text-champagne-900">&#8377;{{ product.sellingPrice | number }}</span>
                       @if (product.discountPercent > 0) {
-                        <span class="text-xs text-stone-400 line-through">&#8377;{{ product.basePrice | number }}</span>
+                        <span class="text-xs text-champagne-400 line-through">&#8377;{{ product.basePrice | number }}</span>
                       }
                     </div>
                   </div>
@@ -108,8 +108,8 @@ import { Product, ProductFilter } from '../../../core/models/product.model';
 
             @if (products().length === 0) {
               <div class="text-center py-20">
-                <p class="text-stone-400 text-sm">No pieces match your filters.</p>
-                <button (click)="resetFilters()" class="mt-3 text-sm font-medium text-amber-700 hover:text-amber-800">Clear all filters</button>
+                <p class="text-champagne-500 text-sm">No pieces match your filters.</p>
+                <button (click)="resetFilters()" class="mt-3 text-sm font-medium text-champagne-700 hover:text-champagne-900">Clear all filters</button>
               </div>
             }
           </main>

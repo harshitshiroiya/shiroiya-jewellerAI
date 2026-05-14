@@ -4,17 +4,29 @@
 @source "./index.html";
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
+  --color-champagne-50: #fdfbf7;
+  --color-champagne-100: #faf5ec;
+  --color-champagne-200: #f3e8d4;
+  --color-champagne-300: #e8d5b5;
+  --color-champagne-400: #d4b78a;
+  --color-champagne-500: #c49a5c;
+  --color-champagne-600: #a67c3c;
+  --color-champagne-700: #8a6530;
+  --color-champagne-800: #6e5028;
+  --color-champagne-900: #4a3518;
 }
 
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-champagne-50);
 }
 
 ::selection {
-  background-color: oklch(82.8% 0.189 84.429 / 0.3);
+  background-color: var(--color-champagne-300);
 }
 
 @layer base {

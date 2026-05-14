@@ -12,10 +12,10 @@ import { CartService } from '../../core/services/cart.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-[calc(100vh-4rem)] flex bg-champagne-900">
+    <div class="h-[calc(100vh-4rem)] flex bg-champagne-100">
       <div class="flex-1 relative">
         <canvas #threeCanvas class="w-full h-full"></canvas>
-        <div class="absolute top-4 left-4 bg-champagne-900/80 backdrop-blur-sm text-champagne-300 px-3 py-1.5 rounded text-xs tracking-wide">
+        <div class="absolute top-4 left-4 bg-white/70 backdrop-blur-sm text-champagne-600 px-3 py-1.5 rounded text-xs tracking-wide">
           Drag to rotate &middot; Scroll to zoom
         </div>
       </div>
@@ -202,7 +202,7 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
   private initScene() {
     const canvas = this.canvasRef.nativeElement;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x2a1f14);
+    this.scene.background = new THREE.Color(0xf5efe6);
 
     this.camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
     this.camera.position.set(0, 2, 5);
@@ -211,25 +211,25 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.toneMappingExposure = 1.8;
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
     this.controls.maxPolarAngle = Math.PI * 0.8;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xfff8ef, 0.8);
     this.scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
     keyLight.position.set(5, 5, 5);
     this.scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const fillLight = new THREE.DirectionalLight(0xfff0db, 1.0);
     fillLight.position.set(-3, 3, -3);
     this.scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
     rimLight.position.set(0, -2, -5);
     this.scene.add(rimLight);
 
@@ -237,13 +237,72 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
   }
 
   private createJewellery() {
-    const ringGeometry = new THREE.TorusGeometry(1, 0.15, 32, 100);
     const material = this.getMetalMaterial();
-    this.metalMesh = new THREE.Mesh(ringGeometry, material);
+    let geometry: THREE.BufferGeometry;
+
+    switch (this.config.baseType) {
+      case 'Earring': {
+        const hook = new THREE.TorusGeometry(0.3, 0.04, 16, 50, Math.PI * 1.5);
+        const drop = new THREE.SphereGeometry(0.25, 32, 32);
+        const hookMesh = new THREE.Mesh(hook, material);
+        const dropMesh = new THREE.Mesh(drop, material);
+        dropMesh.position.set(0.3, -0.25, 0);
+        hookMesh.name = 'metal';
+        dropMesh.name = 'metal2';
+        this.metalMesh = hookMesh;
+        this.scene.add(hookMesh);
+        this.scene.add(dropMesh);
+        this.camera.position.set(0, 0, 4);
+        if (this.config.stoneType !== 'None') this.addStone(0.3, -0.55);
+        return;
+      }
+      case 'Necklace': {
+        const path = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(-1.5, 1.2, 0), new THREE.Vector3(-0.8, 0.3, 0.3),
+          new THREE.Vector3(0, 0, 0.4), new THREE.Vector3(0.8, 0.3, 0.3),
+          new THREE.Vector3(1.5, 1.2, 0)
+        ]);
+        geometry = new THREE.TubeGeometry(path, 64, 0.04, 16, false);
+        this.camera.position.set(0, 0.8, 4);
+        break;
+      }
+      case 'Bracelet':
+        geometry = new THREE.TorusGeometry(1.2, 0.1, 24, 80);
+        this.camera.position.set(0, 3, 3);
+        break;
+      case 'Bangle':
+        geometry = new THREE.TorusGeometry(1.3, 0.15, 32, 100);
+        this.camera.position.set(0, 3, 3);
+        break;
+      case 'Pendant': {
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0.6);
+        shape.bezierCurveTo(0.4, 0.6, 0.5, 0.2, 0.5, 0);
+        shape.bezierCurveTo(0.5, -0.3, 0, -0.6, 0, -0.6);
+        shape.bezierCurveTo(0, -0.6, -0.5, -0.3, -0.5, 0);
+        shape.bezierCurveTo(-0.5, 0.2, -0.4, 0.6, 0, 0.6);
+        const extrudeSettings = { depth: 0.12, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 8 };
+        geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geometry.center();
+        this.camera.position.set(0, 0, 4);
+        break;
+      }
+      default:
+        geometry = new THREE.TorusGeometry(1, 0.15, 32, 100);
+        this.camera.position.set(0, 2, 5);
+        break;
+    }
+
+    this.metalMesh = new THREE.Mesh(geometry, material);
+    this.metalMesh.name = 'metal';
     this.scene.add(this.metalMesh);
 
     if (this.config.stoneType !== 'None') {
-      this.addStone();
+      const stoneY = this.config.baseType === 'Necklace' ? 0.15
+        : this.config.baseType === 'Pendant' ? 0.0
+        : this.config.baseType === 'Bracelet' || this.config.baseType === 'Bangle' ? 0.2
+        : 1.15;
+      this.addStone(0, stoneY);
     }
   }
 
@@ -263,9 +322,9 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
     });
   }
 
-  private addStone() {
+  private addStone(x = 0, y = 1.15) {
     const stoneColors: Record<string, number> = {
-      Diamond: 0xffffff,
+      Diamond: 0xf0f0ff,
       Ruby: 0xe31b23,
       Emerald: 0x009b77,
       Sapphire: 0x0f52ba,
@@ -275,15 +334,18 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
     const stoneGeometry = new THREE.OctahedronGeometry(0.3, 2);
     const stoneMaterial = new THREE.MeshPhysicalMaterial({
       color: stoneColors[this.config.stoneType] || 0xffffff,
-      metalness: 0,
-      roughness: 0,
-      transmission: this.config.stoneType === 'Pearl' ? 0 : 0.9,
+      metalness: 0.05,
+      roughness: 0.02,
+      transmission: this.config.stoneType === 'Pearl' ? 0 : 0.85,
       ior: this.config.stoneType === 'Diamond' ? 2.42 : 1.77,
-      thickness: 0.5
+      thickness: 0.5,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.0,
+      reflectivity: 1.0
     });
 
     const stone = new THREE.Mesh(stoneGeometry, stoneMaterial);
-    stone.position.set(0, 1.15, 0);
+    stone.position.set(x, y, 0);
     stone.scale.setScalar(this.config.carat * 0.8);
     stone.name = 'stone';
     this.scene.add(stone);
@@ -307,15 +369,26 @@ export class ConfiguratorComponent implements OnInit, OnDestroy {
     const existing = this.scene.getObjectByName('stone');
     if (existing) this.scene.remove(existing);
     if (this.config.stoneType !== 'None') {
-      this.addStone();
+      const stoneY = this.config.baseType === 'Necklace' ? 0.15
+        : this.config.baseType === 'Pendant' ? 0.0
+        : this.config.baseType === 'Earring' ? -0.55
+        : this.config.baseType === 'Bracelet' || this.config.baseType === 'Bangle' ? 0.2
+        : 1.15;
+      const stoneX = this.config.baseType === 'Earring' ? 0.3 : 0;
+      this.addStone(stoneX, stoneY);
     }
     this.calculatePrice();
   }
 
   private rebuildScene() {
-    while (this.scene.children.length > 4) {
-      this.scene.remove(this.scene.children[this.scene.children.length - 1]);
-    }
+    const toRemove = this.scene.children.filter(c => c instanceof THREE.Mesh);
+    toRemove.forEach(c => {
+      const mesh = c as THREE.Mesh;
+      mesh.geometry.dispose();
+      if (Array.isArray(mesh.material)) mesh.material.forEach(m => m.dispose());
+      else (mesh.material as THREE.Material).dispose();
+      this.scene.remove(c);
+    });
     this.createJewellery();
   }
 

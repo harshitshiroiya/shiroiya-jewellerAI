@@ -24,6 +24,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "4200:80"
+    environment:
+      - API_URL=http://api:8080
     depends_on:
       - api
 

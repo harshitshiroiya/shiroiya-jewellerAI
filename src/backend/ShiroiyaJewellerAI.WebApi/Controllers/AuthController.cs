@@ -37,6 +37,10 @@ public class AuthController : ControllerBase
             var result = await _mediator.Send(command);
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });

@@ -62,6 +62,8 @@ public static class DependencyInjection
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<ICertificateService, CertificateService>();
         services.AddScoped<IAIService, AIService>();
+        services.AddMemoryCache();
+        services.AddSingleton<IMetalPriceService, MetalPriceService>();
 
         services.AddStackExchangeRedisCache(options =>
         {

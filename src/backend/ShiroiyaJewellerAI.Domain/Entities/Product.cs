@@ -18,6 +18,9 @@ public class Product : BaseEntity
     public string? StoneColor { get; set; }
     public string? StoneClarity { get; set; }
     public decimal? StoneCarat { get; set; }
+    public decimal MakingChargePercent { get; set; }
+    public decimal WastagePercent { get; set; }
+    public decimal StonePrice { get; set; }
     public decimal BasePrice { get; set; }
     public decimal SellingPrice { get; set; }
     public decimal DiscountPercent { get; set; }

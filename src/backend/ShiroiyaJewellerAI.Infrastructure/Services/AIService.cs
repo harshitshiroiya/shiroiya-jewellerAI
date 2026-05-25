@@ -17,6 +17,7 @@ public class AIService : IAIService
     private readonly ApplicationDbContext _context;
     private readonly ChatClient? _chatClient;
     private readonly ILogger<AIService> _logger;
+    private readonly IMetalPriceService _metalPriceService;
     private readonly bool _aiEnabled;
     private readonly string? _geminiApiKey;
     private static readonly HttpClient Http = new();
@@ -68,10 +69,11 @@ public class AIService : IAIService
         - Keep responses under 150 words unless showing product details.
         """;
 
-    public AIService(IConfiguration configuration, ApplicationDbContext context, ILogger<AIService> logger)
+    public AIService(IConfiguration configuration, ApplicationDbContext context, ILogger<AIService> logger, IMetalPriceService metalPriceService)
     {
         _context = context;
         _logger = logger;
+        _metalPriceService = metalPriceService;
 
         var geminiKey = configuration["Gemini:ApiKey"];
         var openAiKey = configuration["OpenAI:ApiKey"];
@@ -81,7 +83,7 @@ public class AIService : IAIService
         if (!string.IsNullOrWhiteSpace(geminiKey))
         {
             _geminiApiKey = geminiKey;
-            var model = configuration["Gemini:Model"] ?? "gemini-2.0-flash";
+            var model = configuration["Gemini:Model"] ?? "gemini-2.5-flash";
             var options = new OpenAIClientOptions
             {
                 Endpoint = new Uri("https://generativelanguage.googleapis.com/v1beta/openai/")
@@ -185,7 +187,8 @@ public class AIService : IAIService
                 {
                     var args = JsonSerializer.Deserialize<JsonElement>(toolCall.FunctionArguments.ToString());
                     var products = await SearchInventoryAsync(args);
-                    var productsJson = JsonSerializer.Serialize(products.Select(p => new { p.Id, p.Name, p.SellingPrice, p.MetalType, p.StoneType, p.ImageUrls }));
+                    var rates = await _metalPriceService.GetTodaysRatesAsync();
+                    var productsJson = SerializeProducts(products, rates);
 
                     messages.Add(new AssistantChatMessage(new[] { ChatToolCall.CreateFunctionToolCall(toolCall.Id, toolCall.FunctionName, toolCall.FunctionArguments) }));
                     messages.Add(new ToolChatMessage(toolCall.Id, productsJson));
@@ -235,13 +238,12 @@ public class AIService : IAIService
     private async IAsyncEnumerable<AIStreamChunk> FallbackChatAsync(string userMessage, List<ChatMessageRecord> history, Domain.Entities.AIConversation conversation)
     {
         var lower = userMessage.ToLowerInvariant();
-        var query = _context.Products.Where(p => p.IsActive).AsQueryable();
 
-        var typeKeywords = new Dictionary<string, JewelleryType>
+        var typeKeywords = new (string Key, JewelleryType Value)[]
         {
-            ["ring"] = JewelleryType.Ring, ["earring"] = JewelleryType.Earring,
-            ["necklace"] = JewelleryType.Necklace, ["bracelet"] = JewelleryType.Bracelet,
-            ["pendant"] = JewelleryType.Pendant, ["bangle"] = JewelleryType.Bangle
+            ("earring", JewelleryType.Earring), ("necklace", JewelleryType.Necklace),
+            ("bracelet", JewelleryType.Bracelet), ("pendant", JewelleryType.Pendant),
+            ("bangle", JewelleryType.Bangle), ("ring", JewelleryType.Ring)
         };
         var metalKeywords = new Dictionary<string, MetalType>
         {
@@ -257,19 +259,66 @@ public class AIService : IAIService
         JewelleryType? matchedType = null;
         MetalType? matchedMetal = null;
         StoneType? matchedStone = null;
+        decimal? maxBudget = null;
 
-        foreach (var kv in typeKeywords)
-            if (lower.Contains(kv.Key)) { matchedType = kv.Value; query = query.Where(p => p.JewelleryType == kv.Value); break; }
+        foreach (var (key, value) in typeKeywords)
+            if (lower.Contains(key)) { matchedType = value; break; }
         foreach (var kv in metalKeywords)
-            if (lower.Contains(kv.Key)) { matchedMetal = kv.Value; query = query.Where(p => p.MetalType == kv.Value); break; }
+            if (lower.Contains(kv.Key)) { matchedMetal = kv.Value; break; }
         foreach (var kv in stoneKeywords)
-            if (lower.Contains(kv.Key)) { matchedStone = kv.Value; query = query.Where(p => p.StoneType == kv.Value); break; }
+            if (lower.Contains(kv.Key)) { matchedStone = kv.Value; break; }
 
-        var products = await query.Take(6).ToListAsync();
+        var budgetMatch = System.Text.RegularExpressions.Regex.Match(lower, @"(\d[\d,]*)\s*(inr|₹|rupee|lakh|k\b)");
+        if (budgetMatch.Success)
+        {
+            var numStr = budgetMatch.Groups[1].Value.Replace(",", "");
+            if (decimal.TryParse(numStr, out var budget))
+            {
+                if (lower.Contains("lakh")) budget *= 100000;
+                else if (budgetMatch.Groups[2].Value == "k") budget *= 1000;
+                maxBudget = budget;
+            }
+        }
+
+        if (matchedType == null && matchedMetal == null && matchedStone == null && maxBudget == null)
+        {
+            var reply = "Welcome to Shiroiya! I'm your personal jewellery concierge. " +
+                  "Tell me what you're looking for and I'll find the perfect piece:\n\n" +
+                  "- **Type**: ring, necklace, earrings, bracelet, pendant, bangle\n" +
+                  "- **Occasion**: engagement, anniversary, birthday, daily wear\n" +
+                  "- **Metal & Stone**: gold, platinum, diamond, ruby, etc.\n" +
+                  "- **Budget**: your range in ₹\n\n" +
+                  "Or simply describe the piece you're imagining!";
+            history.Add(new ChatMessageRecord("assistant", reply));
+            yield return new AIStreamChunk("text", reply);
+            yield break;
+        }
+
+        var rates = await _metalPriceService.GetTodaysRatesAsync();
+
+        var query = _context.Products.Where(p => p.IsActive).AsQueryable();
+        if (matchedType != null) query = query.Where(p => p.JewelleryType == matchedType.Value);
+        if (matchedMetal != null) query = query.Where(p => p.MetalType == matchedMetal.Value);
+        if (matchedStone != null) query = query.Where(p => p.StoneType == matchedStone.Value);
+
+        var allMatches = await query.ToListAsync();
+        var withPrices = allMatches.Select(p => (Product: p, LivePrice: GetLivePrice(p, rates))).ToList();
+
+        if (maxBudget != null)
+            withPrices = withPrices.Where(x => x.LivePrice <= maxBudget.Value).ToList();
+
+        var budgetRelaxed = false;
+        if (withPrices.Count == 0 && maxBudget != null)
+        {
+            budgetRelaxed = true;
+            withPrices = allMatches.Select(p => (Product: p, LivePrice: GetLivePrice(p, rates))).ToList();
+        }
+
+        var products = withPrices.OrderBy(x => x.LivePrice).Take(6).Select(x => x.Product).ToList();
 
         if (products.Count > 0)
         {
-            var productsJson = JsonSerializer.Serialize(products.Select(p => new { p.Id, p.Name, p.SellingPrice, p.MetalType, p.StoneType, p.ImageUrls }));
+            var productsJson = SerializeProducts(products, rates);
             foreach (var p in products)
             {
                 if (!conversation.RecommendedProductIds.Contains(p.Id))
@@ -282,29 +331,29 @@ public class AIService : IAIService
             var stoneName = matchedStone?.ToString() ?? "";
             var desc = $"{metalName} {stoneName} {typeName}".Trim();
 
+            var lowestPrice = products.Min(p => GetLivePrice(p, rates));
+            var budgetNote = maxBudget != null
+                ? (budgetRelaxed
+                    ? $"Nothing was available under ₹{maxBudget:N0}, but here are the closest options starting from ₹{lowestPrice:N0}. "
+                    : $"Showing options within your ₹{maxBudget:N0} budget. ")
+                : "";
+
             var reply = $"I found {products.Count} exquisite {desc} piece(s) from our collection. " +
-                        "Each is handcrafted by our master artisans. " +
-                        "Would you like details on any of these, or shall I refine the search by budget or occasion?";
+                        "Each is handcrafted by our master artisans with certified materials. Prices are based on today's live metal rates. " +
+                        budgetNote +
+                        "Would you like details on any piece, or shall I refine the search?";
             history.Add(new ChatMessageRecord("assistant", reply));
             yield return new AIStreamChunk("text", reply);
         }
         else
         {
-            var reply = (matchedType != null || matchedMetal != null || matchedStone != null)
-                ? "Our current collection doesn't have an exact match, but our artisans can craft a bespoke piece for you. " +
-                  "Could you share more details?\n\n" +
-                  "- What occasion is this for?\n" +
-                  "- Preferred metal (gold, silver, platinum, rose gold)?\n" +
-                  "- Stone preference (diamond, ruby, emerald, sapphire, pearl)?\n" +
-                  "- Approximate budget range in ₹?"
-                : "Welcome to Shiroiya! I'm your personal jewellery concierge. " +
-                  "Tell me what you're looking for and I'll find the perfect piece:\n\n" +
-                  "- **Type**: ring, necklace, earrings, bracelet, pendant, bangle\n" +
-                  "- **Occasion**: engagement, anniversary, birthday, daily wear\n" +
-                  "- **Metal & Stone**: gold, platinum, diamond, ruby, etc.\n" +
-                  "- **Budget**: your range in ₹\n\n" +
-                  "Or simply describe the piece you're imagining!";
-
+            var typeName = matchedType?.ToString().ToLower() ?? "jewellery";
+            var reply = $"We don't have an exact match for your {typeName} preferences in stock right now, but our artisans can craft a bespoke piece tailored to your specifications. " +
+                        "I've noted your preferences:\n\n" +
+                        (matchedMetal != null ? $"- **Metal**: {matchedMetal}\n" : "") +
+                        (matchedStone != null ? $"- **Stone**: {matchedStone}\n" : "") +
+                        (maxBudget != null ? $"- **Budget**: ₹{maxBudget:N0}\n" : "") +
+                        "\nWould you like me to show similar pieces from our collection, or shall I connect you with our design team for a custom creation?";
             history.Add(new ChatMessageRecord("assistant", reply));
             yield return new AIStreamChunk("text", reply);
         }
@@ -348,6 +397,285 @@ public class AIService : IAIService
         return "";
     }
 
+    public async Task<string> TryOnAsync(string userPhotoBase64, string jewelleryPhotoBase64, string jewelleryType)
+    {
+        if (string.IsNullOrWhiteSpace(_geminiApiKey))
+            return "";
+
+        try
+        {
+            var prompt = $"Realistically place this {jewelleryType} on the person in the photo. Make it look natural, as if they are wearing it. Maintain the original photo quality and lighting.";
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new object[]
+                        {
+                            new { text = prompt },
+                            new { inline_data = new { mime_type = "image/png", data = userPhotoBase64 } },
+                            new { inline_data = new { mime_type = "image/png", data = jewelleryPhotoBase64 } }
+                        }
+                    }
+                },
+                generationConfig = new
+                {
+                    responseModalities = new[] { "TEXT", "IMAGE" }
+                }
+            };
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={_geminiApiKey}";
+            var response = await Http.PostAsJsonAsync(url, requestBody);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Gemini Try-On API returned {Status}: {Body}", response.StatusCode, errorBody);
+                return "";
+            }
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+            if (json.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+            {
+                var content = candidates[0].GetProperty("content");
+                if (content.TryGetProperty("parts", out var parts))
+                {
+                    foreach (var part in parts.EnumerateArray())
+                    {
+                        if (part.TryGetProperty("inlineData", out var inlineData) ||
+                            part.TryGetProperty("inline_data", out inlineData))
+                        {
+                            var base64Data = inlineData.GetProperty("data").GetString();
+                            var mimeType = inlineData.GetProperty("mimeType").GetString()
+                                           ?? inlineData.GetProperty("mime_type").GetString()
+                                           ?? "image/png";
+                            return $"data:{mimeType};base64,{base64Data}";
+                        }
+                    }
+                }
+            }
+
+            _logger.LogWarning("Gemini Try-On response did not contain an image");
+            return "";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Try-On image generation failed");
+            return "";
+        }
+    }
+
+    public async Task<DesignGenerationResult> GenerateDesignAsync(string prompt, string? style, string? referenceImageBase64)
+    {
+        if (string.IsNullOrWhiteSpace(_geminiApiKey))
+            return new DesignGenerationResult(new List<GeneratedImage>());
+
+        try
+        {
+            var styleText = string.IsNullOrWhiteSpace(style) ? "luxury modern" : style;
+            var engineeredPrompt = $"Professional jewelry product photography, photorealistic, studio lighting, white background, high-end catalogue shot, detailed metalwork and gemstones: {prompt}. Style: {styleText}";
+
+            var parts = new List<object> { new { text = engineeredPrompt } };
+
+            if (!string.IsNullOrWhiteSpace(referenceImageBase64))
+            {
+                var refBase64 = StripDataUrlPrefix(referenceImageBase64);
+                parts.Add(new { inline_data = new { mime_type = "image/png", data = refBase64 } });
+            }
+
+            var requestBody = new
+            {
+                contents = new[] { new { parts } },
+                generationConfig = new { responseModalities = new[] { "TEXT", "IMAGE" } }
+            };
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={_geminiApiKey}";
+            var response = await Http.PostAsJsonAsync(url, requestBody);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Gemini Design Generate API returned {Status}: {Body}", response.StatusCode, errorBody);
+                return new DesignGenerationResult(new List<GeneratedImage>());
+            }
+
+            var imageUrl = await ExtractImageFromGeminiResponse(response);
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                return new DesignGenerationResult(new List<GeneratedImage>
+                {
+                    new GeneratedImage(Guid.NewGuid().ToString(), imageUrl)
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Design generation failed");
+        }
+
+        return new DesignGenerationResult(new List<GeneratedImage>());
+    }
+
+    public async Task<DesignGenerationResult> RefineDesignAsync(string baseImageBase64, string modification)
+    {
+        if (string.IsNullOrWhiteSpace(_geminiApiKey))
+            return new DesignGenerationResult(new List<GeneratedImage>());
+
+        try
+        {
+            var base64 = StripDataUrlPrefix(baseImageBase64);
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new object[]
+                        {
+                            new { text = modification },
+                            new { inline_data = new { mime_type = "image/png", data = base64 } }
+                        }
+                    }
+                },
+                generationConfig = new { responseModalities = new[] { "TEXT", "IMAGE" } }
+            };
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={_geminiApiKey}";
+            var response = await Http.PostAsJsonAsync(url, requestBody);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Gemini Refine API returned {Status}: {Body}", response.StatusCode, errorBody);
+                return new DesignGenerationResult(new List<GeneratedImage>());
+            }
+
+            var imageUrl = await ExtractImageFromGeminiResponse(response);
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                return new DesignGenerationResult(new List<GeneratedImage>
+                {
+                    new GeneratedImage(Guid.NewGuid().ToString(), imageUrl)
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Design refinement failed");
+        }
+
+        return new DesignGenerationResult(new List<GeneratedImage>());
+    }
+
+    public async Task<DesignGenerationResult> EditDesignRegionAsync(string imageBase64, string maskBase64, string prompt)
+    {
+        if (string.IsNullOrWhiteSpace(_geminiApiKey))
+            return new DesignGenerationResult(new List<GeneratedImage>());
+
+        try
+        {
+            var imgBase64 = StripDataUrlPrefix(imageBase64);
+            var mskBase64 = StripDataUrlPrefix(maskBase64);
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new object[]
+                        {
+                            new { text = $"Edit the circled/highlighted region: {prompt}" },
+                            new { inline_data = new { mime_type = "image/png", data = imgBase64 } },
+                            new { inline_data = new { mime_type = "image/png", data = mskBase64 } }
+                        }
+                    }
+                },
+                generationConfig = new { responseModalities = new[] { "TEXT", "IMAGE" } }
+            };
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={_geminiApiKey}";
+            var response = await Http.PostAsJsonAsync(url, requestBody);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Gemini Edit Region API returned {Status}: {Body}", response.StatusCode, errorBody);
+                return new DesignGenerationResult(new List<GeneratedImage>());
+            }
+
+            var imageUrl = await ExtractImageFromGeminiResponse(response);
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                return new DesignGenerationResult(new List<GeneratedImage>
+                {
+                    new GeneratedImage(Guid.NewGuid().ToString(), imageUrl)
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Design region edit failed");
+        }
+
+        return new DesignGenerationResult(new List<GeneratedImage>());
+    }
+
+    private async Task<string> ExtractImageFromGeminiResponse(HttpResponseMessage response)
+    {
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        if (json.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+        {
+            var content = candidates[0].GetProperty("content");
+            if (content.TryGetProperty("parts", out var parts))
+            {
+                foreach (var part in parts.EnumerateArray())
+                {
+                    if (part.TryGetProperty("inlineData", out var inlineData) ||
+                        part.TryGetProperty("inline_data", out inlineData))
+                    {
+                        var base64Data = inlineData.GetProperty("data").GetString();
+                        string? mimeType = null;
+                        if (inlineData.TryGetProperty("mimeType", out var mt))
+                            mimeType = mt.GetString();
+                        else if (inlineData.TryGetProperty("mime_type", out var mt2))
+                            mimeType = mt2.GetString();
+                        mimeType ??= "image/png";
+                        return $"data:{mimeType};base64,{base64Data}";
+                    }
+                }
+            }
+        }
+
+        _logger.LogWarning("Gemini response did not contain an image");
+        return "";
+    }
+
+    private static string StripDataUrlPrefix(string dataUrl)
+    {
+        if (string.IsNullOrWhiteSpace(dataUrl))
+            return dataUrl;
+
+        var commaIndex = dataUrl.IndexOf(',');
+        if (commaIndex >= 0 && dataUrl.StartsWith("data:"))
+            return dataUrl[(commaIndex + 1)..];
+
+        return dataUrl;
+    }
+
+    private decimal GetLivePrice(Domain.Entities.Product p, MetalRates rates) =>
+        _metalPriceService.CalculateSellingPrice(p.WeightInGrams, p.Purity, p.MetalType.ToString(), p.MakingChargePercent, p.WastagePercent, p.StonePrice, rates);
+
+    private static readonly JsonSerializerOptions CamelCase = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    private string SerializeProducts(List<Domain.Entities.Product> products, MetalRates rates) =>
+        JsonSerializer.Serialize(products.Select(p => new { p.Id, p.Name, p.Description, SellingPrice = GetLivePrice(p, rates), MetalType = p.MetalType.ToString(), StoneType = p.StoneType.ToString(), p.Purity, p.WeightInGrams, p.ImageUrls }), CamelCase);
+
     private async Task<List<Domain.Entities.Product>> SearchInventoryAsync(JsonElement filters)
     {
         var query = _context.Products.Where(p => p.IsActive).AsQueryable();
@@ -360,12 +688,6 @@ public class AIService : IAIService
 
         if (filters.TryGetProperty("stoneType", out var st) && Enum.TryParse<StoneType>(st.GetString(), out var stoneType))
             query = query.Where(p => p.StoneType == stoneType);
-
-        if (filters.TryGetProperty("minPrice", out var minP))
-            query = query.Where(p => p.SellingPrice >= minP.GetDecimal());
-
-        if (filters.TryGetProperty("maxPrice", out var maxP))
-            query = query.Where(p => p.SellingPrice <= maxP.GetDecimal());
 
         return await query.Take(6).ToListAsync();
     }

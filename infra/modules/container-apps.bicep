@@ -52,7 +52,7 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         }
       ]
       scale: {
-        minReplicas: environment == 'prod' ? 2 : 0
+        minReplicas: environment == 'prod' ? 2 : 1
         maxReplicas: environment == 'prod' ? 10 : 3
       }
     }

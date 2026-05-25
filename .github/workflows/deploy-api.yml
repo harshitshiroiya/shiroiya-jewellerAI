@@ -1,0 +1,98 @@
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/backend/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set derived env vars
+        run: |
+          echo "RESOURCE_GROUP=rg-shiroiya-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "ACR_NAME=acrshiroiya${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "APP_NAME=ca-api-shiroiya-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Get ACR login server
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer -o tsv)
+          echo "login-server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
+
+      - name: Build and push API image
+        run: |
+          docker build \
+            -t ${{ steps.acr.outputs.login-server }}/api:${{ github.sha }} \
+            -t ${{ steps.acr.outputs.login-server }}/api:latest \
+            ./src/backend
+          docker push ${{ steps.acr.outputs.login-server }}/api --all-tags
+
+      - name: Get ACR credentials
+        id: acr-creds
+        run: |
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query "passwords[0].value" -o tsv)
+          echo "::add-mask::$ACR_PASSWORD"
+          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: Configure ACR registry
+        run: |
+          az containerapp registry set \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server ${{ steps.acr.outputs.login-server }} \
+            --username ${{ env.ACR_NAME }} \
+            --password "${{ steps.acr-creds.outputs.password }}"
+
+      - name: Get SQL Server FQDN
+        id: sql
+        run: |
+          SQL_FQDN=$(az sql server show --name sql-shiroiya-${{ env.ENVIRONMENT }} --resource-group ${{ env.RESOURCE_GROUP }} --query fullyQualifiedDomainName -o tsv)
+          echo "fqdn=$SQL_FQDN" >> $GITHUB_OUTPUT
+
+      - name: Deploy API Container
+        run: |
+          az containerapp update \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ steps.acr.outputs.login-server }}/api:${{ github.sha }} \
+            --set-env-vars \
+              "ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}" \
+              "ConnectionStrings__DefaultConnection=Server=${{ steps.sql.outputs.fqdn }};Database=ShiroiyaJewellerAI;User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;" \
+              "Gemini__ApiKey=secretref:gemini-api-key" \
+              "Gemini__Model=gemini-2.5-flash" \
+              "Jwt__Key=secretref:jwt-key" \
+              "Jwt__Issuer=ShiroiyaJewellerAI" \
+              "Jwt__Audience=ShiroiyaJewellerAI.Client"
+
+      - name: Verify deployment
+        run: |
+          echo "## API Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ steps.acr.outputs.login-server }}/api:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

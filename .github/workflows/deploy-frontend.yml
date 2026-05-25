@@ -1,0 +1,105 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/frontend/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set derived env vars
+        run: |
+          echo "RESOURCE_GROUP=rg-shiroiya-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "ACR_NAME=acrshiroiya${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "APP_NAME=ca-frontend-shiroiya-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Get ACR login server
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer -o tsv)
+          echo "login-server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Tailwind CSS
+        run: |
+          cd src/frontend
+          npm ci --legacy-peer-deps
+          npx @tailwindcss/cli --input src/input.css --output src/styles.css
+
+      - name: Build and push Frontend image
+        run: |
+          docker build \
+            -t ${{ steps.acr.outputs.login-server }}/frontend:${{ github.sha }} \
+            -t ${{ steps.acr.outputs.login-server }}/frontend:latest \
+            ./src/frontend
+          docker push ${{ steps.acr.outputs.login-server }}/frontend --all-tags
+
+      - name: Get ACR credentials
+        id: acr-creds
+        run: |
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query "passwords[0].value" -o tsv)
+          echo "::add-mask::$ACR_PASSWORD"
+          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: Configure ACR registry
+        run: |
+          az containerapp registry set \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server ${{ steps.acr.outputs.login-server }} \
+            --username ${{ env.ACR_NAME }} \
+            --password "${{ steps.acr-creds.outputs.password }}"
+
+      - name: Get API internal FQDN
+        id: api
+        run: |
+          API_FQDN=$(az containerapp show --name ca-api-shiroiya-${{ env.ENVIRONMENT }} --resource-group ${{ env.RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "fqdn=$API_FQDN" >> $GITHUB_OUTPUT
+
+      - name: Deploy Frontend Container
+        run: |
+          az containerapp update \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ steps.acr.outputs.login-server }}/frontend:${{ github.sha }} \
+            --set-env-vars \
+              "API_URL=https://${{ steps.api.outputs.fqdn }}/api/"
+
+      - name: Verify deployment
+        run: |
+          echo "## Frontend Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ steps.acr.outputs.login-server }}/frontend:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          FRONTEND_FQDN=$(az containerapp show --name ${{ env.APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "**URL:** https://$FRONTEND_FQDN" >> $GITHUB_STEP_SUMMARY

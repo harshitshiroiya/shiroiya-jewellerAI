@@ -77,11 +77,14 @@ jobs:
           echo "fqdn=$SQL_FQDN" >> $GITHUB_OUTPUT
 
       - name: Set API secrets
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+          JWT_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: |
           az containerapp secret set \
             --name ${{ env.APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --secrets "gemini-api-key=${{ secrets.GEMINI_API_KEY }}" "jwt-key=${{ secrets.JWT_SECRET_KEY }}"
+            --secrets "gemini-api-key=${GEMINI_KEY}" "jwt-key=${JWT_KEY}"
 
       - name: Deploy API Container
         run: |

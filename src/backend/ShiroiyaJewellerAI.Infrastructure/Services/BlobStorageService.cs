@@ -7,18 +7,24 @@ namespace ShiroiyaJewellerAI.Infrastructure.Services;
 
 public class BlobStorageService : IBlobStorageService
 {
-    private readonly BlobServiceClient _blobServiceClient;
+    private readonly BlobServiceClient? _blobServiceClient;
     private readonly string _baseUrl;
 
     public BlobStorageService(IConfiguration configuration)
     {
         var connectionString = configuration["AzureStorage:ConnectionString"];
-        _blobServiceClient = new BlobServiceClient(connectionString);
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            _blobServiceClient = new BlobServiceClient(connectionString);
+        }
         _baseUrl = configuration["AzureStorage:BaseUrl"] ?? "";
     }
 
     public async Task<string> UploadAsync(string containerName, string fileName, byte[] data, string contentType)
     {
+        if (_blobServiceClient == null)
+            throw new InvalidOperationException("Azure Blob Storage is not configured. Set AzureStorage:ConnectionString.");
+
         var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
@@ -31,6 +37,9 @@ public class BlobStorageService : IBlobStorageService
 
     public async Task<string> UploadAsync(string containerName, string fileName, Stream stream, string contentType)
     {
+        if (_blobServiceClient == null)
+            throw new InvalidOperationException("Azure Blob Storage is not configured. Set AzureStorage:ConnectionString.");
+
         var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
 
@@ -42,6 +51,8 @@ public class BlobStorageService : IBlobStorageService
 
     public async Task DeleteAsync(string containerName, string fileName)
     {
+        if (_blobServiceClient == null) return;
+
         var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
         var blobClient = containerClient.GetBlobClient(fileName);
         await blobClient.DeleteIfExistsAsync();

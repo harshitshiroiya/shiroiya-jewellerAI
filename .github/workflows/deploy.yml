@@ -194,7 +194,12 @@ jobs:
             --image ${{ needs.deploy-infrastructure.outputs.acr-login-server }}/api:${{ github.sha }} \
             --set-env-vars \
               "ConnectionStrings__DefaultConnection=Server=${{ needs.deploy-infrastructure.outputs.sql-server-fqdn }};Database=${{ env.SQL_DATABASE_NAME }};User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;" \
-              "ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}"
+              "ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}" \
+              "Gemini__ApiKey=secretref:gemini-api-key" \
+              "Gemini__Model=gemini-2.5-flash" \
+              "Jwt__Key=secretref:jwt-key" \
+              "Jwt__Issuer=ShiroiyaJewellerAI" \
+              "Jwt__Audience=ShiroiyaJewellerAI.Client"
 
       - name: Deploy Frontend Container App
         run: |

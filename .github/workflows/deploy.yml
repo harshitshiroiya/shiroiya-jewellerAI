@@ -186,6 +186,13 @@ jobs:
             --username ${{ env.ACR_NAME }} \
             --password "${{ steps.acr-creds.outputs.password }}"
 
+      - name: Set API secrets
+        run: |
+          az containerapp secret set \
+            --name ca-api-shiroiya-${{ env.ENVIRONMENT }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --secrets "gemini-api-key=${{ secrets.GEMINI_API_KEY }}" "jwt-key=${{ secrets.JWT_SECRET_KEY }}"
+
       - name: Deploy API Container App
         run: |
           az containerapp update \

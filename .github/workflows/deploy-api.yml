@@ -76,6 +76,13 @@ jobs:
           SQL_FQDN=$(az sql server show --name sql-shiroiya-${{ env.ENVIRONMENT }} --resource-group ${{ env.RESOURCE_GROUP }} --query fullyQualifiedDomainName -o tsv)
           echo "fqdn=$SQL_FQDN" >> $GITHUB_OUTPUT
 
+      - name: Set API secrets
+        run: |
+          az containerapp secret set \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --secrets "gemini-api-key=${{ secrets.GEMINI_API_KEY }}" "jwt-key=${{ secrets.JWT_SECRET_KEY }}"
+
       - name: Deploy API Container
         run: |
           az containerapp update \

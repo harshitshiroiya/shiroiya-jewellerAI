@@ -76,17 +76,11 @@ jobs:
           SQL_FQDN=$(az sql server show --name sql-shiroiya-${{ env.ENVIRONMENT }} --resource-group ${{ env.RESOURCE_GROUP }} --query fullyQualifiedDomainName -o tsv)
           echo "fqdn=$SQL_FQDN" >> $GITHUB_OUTPUT
 
-      - name: Set API secrets
+      - name: Deploy API Container
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        run: |
-          az containerapp secret set \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --secrets "gemini-api-key=${GEMINI_KEY}" "jwt-key=${JWT_KEY}"
-
-      - name: Deploy API Container
+          SQL_CONN: "Server=${{ steps.sql.outputs.fqdn }};Database=ShiroiyaJewellerAI;User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;"
         run: |
           az containerapp update \
             --name ${{ env.APP_NAME }} \
@@ -94,10 +88,10 @@ jobs:
             --image ${{ steps.acr.outputs.login-server }}/api:${{ github.sha }} \
             --set-env-vars \
               "ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}" \
-              "ConnectionStrings__DefaultConnection=Server=${{ steps.sql.outputs.fqdn }};Database=ShiroiyaJewellerAI;User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;" \
-              "Gemini__ApiKey=secretref:gemini-api-key" \
+              "ConnectionStrings__DefaultConnection=${SQL_CONN}" \
+              "Gemini__ApiKey=${GEMINI_KEY}" \
               "Gemini__Model=gemini-2.5-flash" \
-              "Jwt__Key=secretref:jwt-key" \
+              "Jwt__Key=${JWT_KEY}" \
               "Jwt__Issuer=ShiroiyaJewellerAI" \
               "Jwt__Audience=ShiroiyaJewellerAI.Client"
 

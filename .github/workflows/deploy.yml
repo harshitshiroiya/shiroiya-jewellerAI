@@ -186,28 +186,22 @@ jobs:
             --username ${{ env.ACR_NAME }} \
             --password "${{ steps.acr-creds.outputs.password }}"
 
-      - name: Set API secrets
+      - name: Deploy API Container App
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        run: |
-          az containerapp secret set \
-            --name ca-api-shiroiya-${{ env.ENVIRONMENT }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --secrets "gemini-api-key=${GEMINI_KEY}" "jwt-key=${JWT_KEY}"
-
-      - name: Deploy API Container App
+          SQL_CONN: "Server=${{ needs.deploy-infrastructure.outputs.sql-server-fqdn }};Database=${{ env.SQL_DATABASE_NAME }};User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;"
         run: |
           az containerapp update \
             --name ca-api-shiroiya-${{ env.ENVIRONMENT }} \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --image ${{ needs.deploy-infrastructure.outputs.acr-login-server }}/api:${{ github.sha }} \
             --set-env-vars \
-              "ConnectionStrings__DefaultConnection=Server=${{ needs.deploy-infrastructure.outputs.sql-server-fqdn }};Database=${{ env.SQL_DATABASE_NAME }};User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;" \
+              "ConnectionStrings__DefaultConnection=${SQL_CONN}" \
               "ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }}" \
-              "Gemini__ApiKey=secretref:gemini-api-key" \
+              "Gemini__ApiKey=${GEMINI_KEY}" \
               "Gemini__Model=gemini-2.5-flash" \
-              "Jwt__Key=secretref:jwt-key" \
+              "Jwt__Key=${JWT_KEY}" \
               "Jwt__Issuer=ShiroiyaJewellerAI" \
               "Jwt__Audience=ShiroiyaJewellerAI.Client"
 

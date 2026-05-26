@@ -212,7 +212,7 @@ jobs:
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --image ${{ needs.deploy-infrastructure.outputs.acr-login-server }}/frontend:${{ github.sha }} \
             --set-env-vars \
-              "API_URL=https://${{ needs.deploy-infrastructure.outputs.api-fqdn }}/api/"
+              "API_URL=http://${{ needs.deploy-infrastructure.outputs.api-fqdn }}/api/"
 
       - name: Output deployment URLs
         run: |

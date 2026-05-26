@@ -94,7 +94,7 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ steps.acr.outputs.login-server }}/frontend:${{ github.sha }} \
             --set-env-vars \
-              "API_URL=http://${{ steps.api.outputs.fqdn }}/api/"
+              "API_URL=https://${{ steps.api.outputs.fqdn }}/api/"
 
       - name: Verify deployment
         run: |
